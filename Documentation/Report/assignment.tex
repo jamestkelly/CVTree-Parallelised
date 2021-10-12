@@ -1,0 +1,241 @@
+% This template was originally created by Karol Kozioł, email: 
+%   mail@karol-koziol.net
+%
+% This document was modified for use on Overleaf & ShareLaTeX. 
+% The following document contains the version as modified by
+%   James Kelly for general use at the Queensland University of Technology.
+%
+%--------------------------------------------------------------------------%
+%
+% Refer to MXB103 Group Project CRA & further information as available on
+%   Blackboard.
+%
+%--------------------------------------------------------------------------%
+%                           DOCUMENT STYLES                                %
+%--------------------------------------------------------------------------%
+\documentclass[a4paper,12pt]{article}
+    \usepackage[T1]{fontenc}
+    \usepackage[utf8]{inputenc}
+    \usepackage{graphicx}
+    \usepackage{subfig}
+    \usepackage{xcolor}
+    \usepackage{natbib}
+    \usepackage{setspace}
+    \usepackage[numbered,framed]{matlab-prettifier}
+    % Define font families
+    \usepackage{csquotes}
+    \usepackage{upquote}
+    \usepackage{pdfpages}
+    
+    % Define math & coding packages
+    \usepackage{amsmath,amssymb,amsthm,textcomp}
+    \usepackage{enumerate}
+    \usepackage{multicol}
+    \usepackage{tikz}
+    \usepackage{multirow}
+    \usepackage{rotating}
+    \usepackage{appendix}
+    \usepackage{float}
+    \usepackage{ulem}
+    \usepackage[customcolors]{hf-tikz}
+    %\usepackage{algorithm}
+    %\usepackage{algorithmic} % Package for pseudo-code
+    \usepackage{pseudo}
+    
+    % Set up hyperlinking
+    \usepackage{hyperref}
+    \urlstyle{same}
+    \hypersetup{
+        colorlinks = true,
+        linkcolor = black,
+        filecolor = magenta,
+        urlcolor = blue,
+        citecolor = black,
+    }
+    \makeatletter
+    \g@addto@macro{\UrlBreaks}{\UrlOrds}
+    \makeatother
+    
+    % Define page geometry
+    \usepackage{geometry}
+    \geometry{%
+        left = 20mm, right = 20mm, %
+        bindingoffset = 0mm, top = 20mm, bottom = 20mm}
+    \linespread{1.3}
+    \newcommand{\linia}{\rule{\linewidth}{0.5pt}}
+    
+    % Template to create custom theorems if necessary
+    \newtheoremstyle{mytheor}
+        {1ex}{1ex}{\normalfont}{0pt}{\scshape}{.}{1ex}
+        {{\thmname{#1 }}{\thmnumber{#2}}{\thmnote{ (#3)}}}
+    
+    \theoremstyle{mytheor}
+        \newtheorem{defi}{Definition}
+    
+    % Define headers and footers
+    \usepackage{fancyhdr}
+    \pagestyle{fancy}
+        \lhead{CAB401 | Parallelisation Project: CV Tree}
+        \chead{}
+        \rhead{Jim Kelly | N9763686}
+        \lfoot{Queensland University of Technology | Semester 2, 2021}
+        \cfoot{}
+        \rfoot{Page \thepage}
+        \renewcommand{\headrulewidth}{0pt}
+        \renewcommand{\footrulewidth}{0pt}
+    % Define title page style
+    \fancypagestyle{title page}{%
+        \lhead{}
+        \rhead{}
+        \lfoot{}
+        \rfoot{}
+    }
+    
+    % Default fixed font does not support bold face
+    \DeclareFixedFont{\ttb}{T1}{txtt}{bx}{n}{10} % for bold
+    \DeclareFixedFont{\ttm}{T1}{txtt}{m}{n}{10}  % for normal
+    
+    % Custom colors
+    \usepackage{color}
+    \definecolor{deepblue}{rgb}{0,0,0.5}
+    \definecolor{deepred}{rgb}{0.6,0,0}
+    \definecolor{deepgreen}{rgb}{0,0.5,0}
+    	
+    % 'Code Listings' for showing code in the report
+    \let\ph\mlplaceholder % shorter macro
+    \lstMakeShortInline"
+    % Python style for highlighting
+    \newcommand\pythonstyle{\lstset{
+    language=Python,
+    basicstyle=\ttm,
+    morekeywords={self},              % Add keywords here
+    keywordstyle=\ttb\color{deepblue},
+    emph={MyClass,__init__},          % Custom highlighting
+    emphstyle=\ttb\color{deepred},    % Custom highlighting style
+    stringstyle=\color{deepgreen},
+    frame=tb,                         % Any extra options here
+    showstringspaces=false
+    }}
+    % Python environment
+    \lstnewenvironment{python}[1][]
+    {
+    \pythonstyle
+    \lstset{#1}
+    }
+    {}
+    
+    % Python for external files
+    \newcommand\pythonexternal[2][]{{
+    \pythonstyle
+    \lstinputlisting[#1]{#2}}}
+    
+    % Python for inline
+    \newcommand\pythoninline[1]{{\pythonstyle\lstinline!#1!}}
+    
+    \lstset{
+      style = Matlab-editor,
+      basicstyle = \mlttfamily,
+      escapechar = ",
+      mlshowsectionrules = true,
+    }
+    
+    % C#
+    \lstdefinestyle{sharpc}{language=[Sharp]C, frame=lr, rulecolor=\color{blue!80!black}}
+    
+    % Define command for tab spacing
+    \newcommand\tab[1][1cm]{\hspace*{#1}}
+    
+    \makeatletter
+    \renewcommand\paragraph{\@startsection{paragraph}{4}{\z@}%
+                {-2.5ex\@plus -1ex \@minus -.25ex}%
+                {1.25ex \@plus .25ex}%
+                {\normalfont\normalsize\bfseries}}
+    \makeatother
+    \setcounter{secnumdepth}{4} % how many sectioning levels to assign numbers to
+    \setcounter{tocdepth}{4}    % how many sectioning levels to show in ToC
+        
+    % Define line-spacing for the document
+    \singlespacing
+
+%--------------------------------------------------------------------------%
+%                           DOCUMENT CONTENTS                              %
+%--------------------------------------------------------------------------%
+
+\begin{document}
+    % Define title page style and contents
+    \thispagestyle{title page}
+	    \includepdf[pages=-]{Images/Coverpage.pdf} % Include pre-made .pdf file
+    \newpage
+        \pagebreak
+    \tableofcontents
+        \pagebreak
+    \section{Introduction}
+        % Brief introduction to the project, what's this report about, etc.
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+    \section{Analysis}
+        \subsection{Sequential Application Design \& Architecture}
+        % An explanation of the original sequential application that is to be parallelised. What is does, i.e. black box, how it works, i.e. a high level description of the software's design and/or architecture. This might include call graphs, class diagrams, etc. Whatever you find useful to describe the structure of the original sequential application.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\\
+            
+            \noindent Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
+    \pagebreak
+        \subsection{Potential Parallelism}
+        % Your analysis of the potential parallelism within the application.
+            \subsubsection{Control Flow Constructs}
+            % Identification of existing loops or control flow constructs where parallelism might be found.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+            \subsubsection{Control Dependencies}
+            % Explanation of the data and control dependencies that you analysed to determine which sections of the code are safe to parallelise.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+            \subsubsection{Granularity and Scalability}
+            % Which of these are likely to be of sufficient granularity to be worth exploiting? Is it scalable parallelism? A discussion of changes required to expose parallelism, such as replacing algorithms or code restructuring transformations.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+    \pagebreak
+        \subsection{Mapping Computation \& Data}
+            % How did you map computation and/or data to processors? Which parallelism abstractions or programming language constructs did you use to perform synchronization?
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\\
+                
+                \noindent Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
+    \section{Methodology \& Approaches}
+        \subsection{Timing and Profiling}
+        % Timing and profiling results, both before and after parallelization and a speedup graph.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\\
+                
+            \noindent Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
+        \subsection{Testing}
+        % How did you test that the parallel version produced the exact same results as the original sequential version?
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\\
+                
+            \noindent Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
+        \subsection{Tools and Techniques}
+        % A description of the compilers, software, tools, and techniques you used to parallelize the application.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+        \subsection{Performance, Barriers, and Improvements}
+        % A description of the compilers, software, tools, and techniques you used to parallelize the application.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+    \pagebreak
+    \section{Results}
+        \subsection{Programmatic Changes}
+        % An explanation of the code that you added or modified to parallelise the application. Including the source code line count.
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+    \section{Discussion}
+    % Reflect on your outcome – What have you learnt? How successful was your attempt? Do you think you’ve done as well as is possible? What might you have done differently?
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\\
+                
+        \noindent Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
+    \pagebreak
+    \section{Conclusion}
+    % Extension of discussion, summarising findings, etc.
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\\
+                
+        \noindent Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
+    \pagebreak
+    \addcontentsline{toc}{section}{References}
+    \renewcommand*{\bibfont}{\raggedright}
+        \bibliographystyle{apalike}
+        \bibliography{references.bib}
+\end{document}
+
+%--------------------------------------------------------------------------%
+%                              END OF FILE                                 %
+%--------------------------------------------------------------------------%
