@@ -3,9 +3,17 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <assert.h>
+#include <vector>
+#include <fstream>
+#include <iterator>
+#include <string>
+#include <iostream>
+using namespace std;
 
 /// -----------------------------------------------------------------------------------------------------------------
 /// CVTree [TIDY] Version
+/// -----------------------------------------------------------------------------------------------------------------
 /*
 int number_bacteria;
 char** bacteria_name;
@@ -51,7 +59,7 @@ private:
 	{
 		complement++;
 		indexs = 0;
-		for (int i = 0; i < LEN - 1; i++)
+		for (int i = 0; i < LEN - 1; i++) // Can parallelise
 		{
 			short enc = encode(buffer[i]);
 			one_l[enc]++;
@@ -146,13 +154,14 @@ void ReadInputFile(const char* input_name)
 	fclose(input_file);
 }
 
+// Hotspot identified by VTune
 double CompareBacteria(Bacteria* b1, Bacteria* b2)
 {
 	double correlation = 0;
 	double vector_len1 = 0;
 	double vector_len2 = 0;
 
-	for (long i = 0; i < M; i++)
+	for (long i = 0; i < M; i++) // Split across threads
 	{
 		double stochastic1 = b1->stochastic_compute(i);
 		double t1;
@@ -178,15 +187,18 @@ double CompareBacteria(Bacteria* b1, Bacteria* b2)
 
 void CompareAllBacteria()
 {
+	// Create correlation array to store results
+	double[] corr_arr = new double[number_bacteria - 1]
+
 	for (int i = 0; i < number_bacteria - 1; i++)
 	{
 		Bacteria* b1 = new Bacteria(bacteria_name[i]);
 
-		for (int j = i + 1; j < number_bacteria; j++)
+		for (int j = i + 1; j < number_bacteria; j++) // Can convert this to linear (replace j with (i + 1))
 		{
 			Bacteria* b2 = new Bacteria(bacteria_name[j]);
 			double correlation = CompareBacteria(b1, b2);
-			printf("%03d %03d -> %.10lf\n", i, j, correlation);
+			printf("%03d %03d -> %.10lf\n", i, j, correlation); // Replace print with store bacteria
 			delete b2;
 		}
 		delete b1;
@@ -218,6 +230,71 @@ short code[27] = { 0, 2, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, -1, 12, 13, 14, 
 #define AA_NUMBER		20
 #define	EPSILON			1e-010
 
+/// -----------------------------------------------------------------------------------------------------------------
+/// New Methods
+/// -----------------------------------------------------------------------------------------------------------------
+/// <summary>
+/// Method to write to an output file
+/// </summary>
+/// <param name="arr"></param>
+void WriteToFile(vector<double> arr) {
+	std::ofstream outputFile("./correlation.txt"); // Set output file
+
+	//
+	for (const auto& value : arr) {
+		outputFile << value << "\n";
+	}
+}
+
+void ReadFromFile() {
+	vector<double> inputResult;
+	std::ifstream inputFile("./correlation.txt", std::ios::in); // Set input file
+
+	// Check to see the file was opened correctly
+	if (!inputFile.is_open()) {
+		std::cerr << "There was a problem opening the input file.\n";
+		exit(1);
+	}
+
+	double num = 0.0;
+
+	// Store values from input file until end of file (EOF)
+	while (inputFile >> num) {
+		inputResult.push_back(num);
+	}
+
+	// TEMPORARY
+	// Verify that the correlation values were stored correctly
+	for (int i = 0; i < inputResult.size(); i++) {
+		std::cout << inputResult[i] << std::endl;
+	}
+
+	/*string line;
+	ifstream inputFile("./correlation.txt"); // Set input file
+
+	if (inputFile.is_open()) {
+		while (getline(inputFile, line)) {
+			//inputResult.push_back(std::stod(line));
+			cout << line << '\n';
+		}
+		inputFile.close();
+	}
+	else {
+		printf("Unable to open file.");
+	}
+
+	//
+	for (const auto& value : inputResult) {
+		printf("Correlation Value: %d", value);
+	}*/
+}
+
+/// -----------------------------------------------------------------------------------------------------------------
+/// Unchanged Methods
+/// -----------------------------------------------------------------------------------------------------------------
+/// <summary>
+/// 
+/// </summary>
 void Init()
 {
 	M2 = 1;
@@ -227,8 +304,14 @@ void Init()
 	M = M1 * AA_NUMBER;			// M  = AA_NUMBER ^ (LEN);
 }
 
+/// <summary>
+/// 
+/// </summary>
 class Bacteria
 {
+	/// <summary>
+	/// 
+	/// </summary>
 private:
 	long* vector;
 	long* second;
@@ -238,6 +321,9 @@ private:
 	long total_l;
 	long complement;
 
+	/// <summary>
+	/// 
+	/// </summary>
 	void InitVectors()
 	{
 		vector = new long[M];
@@ -250,6 +336,10 @@ private:
 		complement = 0;
 	}
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="buffer"></param>
 	void init_buffer(char* buffer)
 	{
 		complement++;
@@ -264,6 +354,10 @@ private:
 		second[indexs]++;
 	}
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="ch"></param>
 	void cont_buffer(char ch)
 	{
 		short enc = encode(ch);
@@ -276,11 +370,18 @@ private:
 		second[indexs]++;
 	}
 
+	/// <summary>
+	/// 
+	/// </summary>
 public:
 	long count;
 	double* tv;
 	long* ti;
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="filename"></param>
 	Bacteria(char* filename)
 	{
 		FILE* bacteria_file;
@@ -327,7 +428,7 @@ public:
 		count = 0;
 		double* t = new double[M];
 
-		for (long i = 0; i < M; i++)
+		for (long i = 0; i < M; i++) // Can be parallelised (LOW PRIO)
 		{
 			double p1 = second_div_total[i_div_aa_number];
 			double p2 = one_l_div_total[i_mod_aa_number];
@@ -368,7 +469,7 @@ public:
 		ti = new long[count];
 
 		int pos = 0;
-		for (long i = 0; i < M; i++)
+		for (long i = 0; i < M; i++) // Can be parallelised (LOW PRIO)
 		{
 			if (t[i] != 0)
 			{
@@ -383,6 +484,10 @@ public:
 	}
 };
 
+/// <summary>
+/// 
+/// </summary>
+/// <param name="input_name"></param>
 void ReadInputFile(const char* input_name)
 {
 	FILE* input_file;
@@ -397,7 +502,7 @@ void ReadInputFile(const char* input_name)
 	fscanf_s(input_file, "%d", &number_bacteria);
 	bacteria_name = new char* [number_bacteria];
 
-	for (long i = 0; i < number_bacteria; i++)
+	for (long i = 0; i < number_bacteria; i++) // Can be parallelise (MEDIUM PRIO)
 	{
 		char name[10];
 		fscanf_s(input_file, "%s", name, 10);
@@ -407,6 +512,12 @@ void ReadInputFile(const char* input_name)
 	fclose(input_file);
 }
 
+/// <summary>
+/// 
+/// </summary>
+/// <param name="b1"></param>
+/// <param name="b2"></param>
+/// <returns></returns>
 double CompareBacteria(Bacteria* b1, Bacteria* b2)
 {
 	double correlation = 0;
@@ -455,35 +566,65 @@ double CompareBacteria(Bacteria* b1, Bacteria* b2)
 	return correlation / (sqrt(vector_len1) * sqrt(vector_len2));
 }
 
-void CompareAllBacteria()
+/// -----------------------------------------------------------------------------------------------------------------
+/// Modified Methods
+/// -----------------------------------------------------------------------------------------------------------------
+/// <summary>
+/// 
+/// </summary>
+vector<double> CompareAllBacteria()
 {
+	vector<double> result;
+	int count = 0;
 	Bacteria** b = new Bacteria * [number_bacteria];
-	for (int i = 0; i < number_bacteria; i++)
+	for (int i = 0; i < number_bacteria; i++) // Can be parallelised (HIGH PRIO)
 	{
-		printf("load %d of %d\n", i + 1, number_bacteria);
+		//printf("load %d of %d\n", i + 1, number_bacteria); // Load information not important
 		b[i] = new Bacteria(bacteria_name[i]);
 	}
 
-	for (int i = 0; i < number_bacteria - 1; i++)
-		for (int j = i + 1; j < number_bacteria; j++)
+	for (int i = 0; i < number_bacteria - 1; i++) // Can be parallelised (HIGH PRIO)
+	{
+		for (int j = i + 1; j < number_bacteria; j++) // Can be converted to linear loop
 		{
-			printf("%2d %2d -> ", i, j);
+			//printf("%2d %2d -> ", i, j); // TODO: Remove this
 			double correlation = CompareBacteria(b[i], b[j]);
-			printf("%.20lf\n", correlation);
+			result.push_back(correlation);
+			//printf("%.20lf\n", correlation); // TODO: Remove this
 		}
+	}
+	printf("Array Size: %d\n", result.size());
+	return result;
 }
 
+/// <summary>
+/// 
+/// </summary>
+/// <param name="argc"></param>
+/// <param name="argv"></param>
+/// <returns></returns>
 int main(int argc, char* argv[])
 {
 	time_t t1 = time(NULL);
 
 	Init();
 	ReadInputFile("list.txt");
-	CompareAllBacteria();
-
+	vector<double> result = CompareAllBacteria();
+	WriteToFile(result);
+	ReadFromFile();
 	time_t t2 = time(NULL);
 	printf("time elapsed: %lld seconds\n", t2 - t1);
 	return 0;
 }
 
+
+/// -----------------------------------------------------------------------------------------------------------------
+/// TODO:
+///		[X] Add method to write output to file (binary)
+///		[ ] Add method to verify new output against binary file
+///		[ ] Parallelise high priority tasks
+///		[ ] Convert triangular loops to linear where possible
+///		[ ] Parallelise medium priority tasks
+///		[ ] Parallelise low priority tasks (if possible)
+///		[ ] Profile at each stage 
 /// -----------------------------------------------------------------------------------------------------------------

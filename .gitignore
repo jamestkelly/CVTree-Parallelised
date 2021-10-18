@@ -32,4 +32,10 @@
 *.app
 
 # VSCode files
-src/.vs/
+src/CVTreeParallelised/.vs/*
+
+*.suo
+
+Debug/
+Release/
+"VTune Profiler Results/

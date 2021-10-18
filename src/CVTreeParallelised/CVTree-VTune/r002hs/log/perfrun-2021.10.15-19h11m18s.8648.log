@@ -1,0 +1,11 @@
+88 [9276] INFO perfrun.launcher <> - Launcher main begin
+94 [9276] INFO perfrun.launcher <> - MessageCatalogInit finished
+94 [9276] INFO perfrun.launcher <> - Launcher instance created
+94 [9276] INFO perfrun.launcher <> - argc = 9; cmdline = D:\Program Files\Intel\oneAPI\vtune\latest\bin64\amplxe-runss.exe --ui-output-format xml --ui-output-fd 2452 -r D:\Projects\CVTree-Parallelised\src\CVTreeParallelised\CVTree-VTune\r002hs --command cancel 
+109 [9276] INFO perfrun.launcher <> - New signal handler callback was added
+182 [9276] INFO perfrun.launcher <> - create msngr2::ICliToolContext
+182 [9276] INFO perfrun.launcher <> - create file finder object
+182 [9276] INFO perfrun.launcher <> - open the result directory: pattern = D:\Projects\CVTree-Parallelised\src\CVTreeParallelised\CVTree-VTune\r002hs
+186 [9276] INFO perfrun.launcher <> - RpcClient: IP address = 127.0.0.1; port = 4294957858
+189 [9276] INFO perfrun.launcher <> - Application exit code: 0
+189 [9276] INFO perfrun.launcher <> - Exit code: 0
