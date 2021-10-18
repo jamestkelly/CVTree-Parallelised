@@ -234,9 +234,11 @@ short code[27] = { 0, 2, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, -1, 12, 13, 14, 
 /// New Methods
 /// -----------------------------------------------------------------------------------------------------------------
 /// <summary>
-/// Method to write to an output file
+/// Method to write results to an output file.
 /// </summary>
-/// <param name="arr"></param>
+/// <param name="arr">
+/// 
+/// </param>
 void WriteToFile(vector<double> arr) {
 	std::ofstream outputFile("./correlation.txt"); // Set output file
 
@@ -246,47 +248,74 @@ void WriteToFile(vector<double> arr) {
 	}
 }
 
-void ReadFromFile() {
-	vector<double> inputResult;
+/// <summary>
+/// Method to read results from an input file.
+/// </summary>
+/// <returns>
+/// 
+/// </returns>
+vector<double> ReadFromFile() {
+	double num = 0.0; // Initialise value to store line
+	vector<double> inputResult; // Initialise vector to store results
 	std::ifstream inputFile("./correlation.txt", std::ios::in); // Set input file
 
 	// Check to see the file was opened correctly
 	if (!inputFile.is_open()) {
-		std::cerr << "There was a problem opening the input file.\n";
-		exit(1);
+		std::cerr << "There was a problem opening the input file.\n"; // Print error message
+		exit(1); // Exit
 	}
-
-	double num = 0.0;
 
 	// Store values from input file until end of file (EOF)
 	while (inputFile >> num) {
 		inputResult.push_back(num);
 	}
 
-	// TEMPORARY
-	// Verify that the correlation values were stored correctly
-	for (int i = 0; i < inputResult.size(); i++) {
-		std::cout << inputResult[i] << std::endl;
-	}
+	return inputResult; // Return the resulting vector
+}
 
-	/*string line;
-	ifstream inputFile("./correlation.txt"); // Set input file
-
-	if (inputFile.is_open()) {
-		while (getline(inputFile, line)) {
-			//inputResult.push_back(std::stod(line));
-			cout << line << '\n';
-		}
-		inputFile.close();
+/// <summary>
+/// Method to compare the results of the sequential 
+/// </summary>
+/// <param name="seqCorrArr">
+/// 
+/// </param>
+/// <param name="parCorrArr">
+/// 
+/// </param>
+/// <returns>
+/// 
+/// </returns>
+bool CompareResults(vector<double> seqCorrArr, vector<double> parCorrArr) {
+	/*if (seqCorrArr == parCorrArr) {
+		printf("Sequential and Parallel results match.");
+		return true;
 	}
 	else {
-		printf("Unable to open file.");
+		printf("Sequential and Parallel results do not match.");
+		return false;
+	}*/
+	int count = 0;
+
+	for (int i = 0; i < seqCorrArr.size(); i++) {
+		//printf("Sequential: %f | Parallel: %f\n", seqCorrArr.at(i), parCorrArr.at(i));
+		if (seqCorrArr.at(i) != parCorrArr.at(i)) {
+			printf("Mismatch at %d: %f and %f.", i, seqCorrArr.at(i), parCorrArr.at(i));
+			count++;
+		}
 	}
 
-	//
-	for (const auto& value : inputResult) {
-		printf("Correlation Value: %d", value);
-	}*/
+	/// TODO:
+	///		[ ] Fix error where matching values are incorrectly listed as not matching
+	///		[ ] Verify that the program will return true when comparing two matching values
+	///		[ ] Extract program into a seperate project or even just file to be used later
+	///				as a check & balance for further parallelisations.
+
+	if (count > 0) {
+		return false;
+	}
+	else {
+		return true;
+	}
 }
 
 /// -----------------------------------------------------------------------------------------------------------------
@@ -611,7 +640,14 @@ int main(int argc, char* argv[])
 	ReadInputFile("list.txt");
 	vector<double> result = CompareAllBacteria();
 	WriteToFile(result);
-	ReadFromFile();
+	vector<double> checkResult = ReadFromFile();
+	bool match = CompareResults(result, checkResult);
+	if (match) {
+		printf("The two vectors match.\n");
+	}
+	else {
+		printf("The two vectors do not match.\n");
+	}
 	time_t t2 = time(NULL);
 	printf("time elapsed: %lld seconds\n", t2 - t1);
 	return 0;
