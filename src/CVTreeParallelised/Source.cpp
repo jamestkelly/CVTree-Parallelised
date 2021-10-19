@@ -146,19 +146,52 @@ void Init()
 /// <summary>
 /// 
 /// </summary>
+/// <param name="input_name">
+/// 
+/// </param>
+void ReadInputFile(const char* input_name)
+{
+	FILE* input_file;
+	errno_t OK = fopen_s(&input_file, input_name, "r");
+
+	if (OK != 0)
+	{
+		fprintf(stderr, "Error: failed to open file %s (Hint: check your working directory)\n", input_name);
+		exit(1);
+	}
+
+	fscanf_s(input_file, "%d", &number_bacteria);
+	bacteria_name = new char* [number_bacteria];
+
+	for (long i = 0; i < number_bacteria; i++) // Can be parallelised MAYBE (LOW PRIO)
+	{
+		char name[10];
+		fscanf_s(input_file, "%s", name, 10);
+		bacteria_name[i] = new char[20];
+		sprintf_s(bacteria_name[i], 20, "data/%s.faa", name);
+	}
+	fclose(input_file);
+}
+
+/// ------------------------------------------------------------------------------------------------------------- ///
+///													Modified Methods											  ///
+/// ------------------------------------------------------------------------------------------------------------- ///
+/// <summary>
+/// 
+/// </summary>
 class Bacteria
 {
 	/// <summary>
 	/// 
 	/// </summary>
-	private:
-		long* vector;
-		long* second;
-		long one_l[AA_NUMBER];
-		long indexs;
-		long total;
-		long total_l;
-		long complement;
+private:
+	long* vector;
+	long* second;
+	long one_l[AA_NUMBER];
+	long indexs;
+	long total;
+	long total_l;
+	long complement;
 
 	/// <summary>
 	/// 
@@ -212,10 +245,10 @@ class Bacteria
 	/// <summary>
 	/// 
 	/// </summary>
-	public:
-		long count;
-		double* tv;
-		long* ti;
+public:
+	long count;
+	double* tv;
+	long* ti;
 
 	/// <summary>
 	/// 
@@ -257,12 +290,14 @@ class Bacteria
 		long i_div_M1 = 0;
 
 		double one_l_div_total[AA_NUMBER];
-		for (int i = 0; i < AA_NUMBER; i++)
+		for (int i = 0; i < AA_NUMBER; i++) { // Can be parallelised 
 			one_l_div_total[i] = (double)one_l[i] / total_l;
+		}
 
 		double* second_div_total = new double[M1];
-		for (int i = 0; i < M1; i++)
+		for (int i = 0; i < M1; i++) {
 			second_div_total[i] = (double)second[i] / total_plus_complement;
+		}
 
 		count = 0;
 		double* t = new double[M];
@@ -326,36 +361,6 @@ class Bacteria
 /// <summary>
 /// 
 /// </summary>
-/// <param name="input_name">
-/// 
-/// </param>
-void ReadInputFile(const char* input_name)
-{
-	FILE* input_file;
-	errno_t OK = fopen_s(&input_file, input_name, "r");
-
-	if (OK != 0)
-	{
-		fprintf(stderr, "Error: failed to open file %s (Hint: check your working directory)\n", input_name);
-		exit(1);
-	}
-
-	fscanf_s(input_file, "%d", &number_bacteria);
-	bacteria_name = new char* [number_bacteria];
-
-	for (long i = 0; i < number_bacteria; i++) // Can be parallelised MAYBE (LOW PRIO)
-	{
-		char name[10];
-		fscanf_s(input_file, "%s", name, 10);
-		bacteria_name[i] = new char[20];
-		sprintf_s(bacteria_name[i], 20, "data/%s.faa", name);
-	}
-	fclose(input_file);
-}
-
-/// <summary>
-/// 
-/// </summary>
 /// <param name="b1">
 /// 
 /// </param>
@@ -413,9 +418,6 @@ double CompareBacteria(Bacteria* b1, Bacteria* b2)
 	return correlation / (sqrt(vector_len1) * sqrt(vector_len2));
 }
 
-/// ------------------------------------------------------------------------------------------------------------- ///
-///													Modified Methods											  ///
-/// ------------------------------------------------------------------------------------------------------------- ///
 /// <summary>
 /// TODO:
 ///		[ ] Add description of method and an explanation of the changes made to the source code.
@@ -428,20 +430,34 @@ vector<double> CompareAllBacteria()
 	int num_iter = number_bacteria - 1; // Set number of iterations to the number of bacteria
 	Bacteria** b = new Bacteria * [number_bacteria];
 
-	// Load the bacteria objects
-	for (int i = 0; i < number_bacteria; i++) // Can be parallelised (HIGH PRIO)
+	omp_set_dynamic(0);     // Explicitly disable dynamic teams
+	omp_set_num_threads(THREAD_NUM); // Use 4 threads for all consecutive parallel regions
+#pragma omp parallel
 	{
-		b[i] = new Bacteria(bacteria_name[i]);
-	}
+		printf("Number of Threads: %d.\n", omp_get_num_threads());
+#pragma omp for ordered schedule(dynamic)
+		// Load the bacteria objects
+		for (int i = 0; i < number_bacteria; i++) // Can be parallelised (HIGH PRIO)
+		{
+			b[i] = new Bacteria(bacteria_name[i]);
+			printf("load %d of %d\n", i + 1, number_bacteria);
+		}
 
-	// Iterate through all bacteria and calculate correlation values.
-	for (int i = 0; i < num_iter; i++) {
-		result.push_back(CompareBacteria(b[count], b[i + 1]));
+#pragma omp for ordered schedule(dynamic)
+		// Iterate through all bacteria and calculate correlation values.
+		for (int i = 0; i < num_iter; i++) { // Error C3020: 'i': index variable of OpenMP 'for' loop cannot be modified in loop body.
+			// Potentially can fix this by having an operation or method (function) to calculate the total number of expected iterations
+			//  off 'number_bacteria', i.e. with 'number_bacteria = 41', then there are 820 expected iterations.
+			printf("%2d %2d -> ", count, i + 1); // TODO: Remove this after debugging
+			double correlation = CompareBacteria(b[count], b[i + 1]);
+			result.push_back(correlation);
+			printf("%.20lf\n", correlation); // TODO: Remove this after debugging
 
-		// If the loop is about to reach the number of iterations
-		if (i == num_iter - 1) {
-			i = count; // Set 'i' to the counter's value
-			count++; // Increment the counter
+			// If the loop is about to reach the number of iterations
+			if (i == num_iter - 1) {
+				i = count; // Set 'i' to the counter's value
+				count++; // Increment the counter
+			}
 		}
 	}
 
