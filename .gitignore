@@ -33,9 +33,12 @@
 
 # VSCode files
 src/CVTreeParallelised/.vs/*
-
 *.suo
 
+# Folder paths
 Debug/
 Release/
-"VTune Profiler Results/
+"VTune Profiler Results"/
+
+# Mac files
+*.DS_Store
