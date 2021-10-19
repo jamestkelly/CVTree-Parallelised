@@ -242,7 +242,7 @@ short code[27] = { 0, 2, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, -1, 12, 13, 14, 
 void WriteToFile(vector<double> arr) {
 	std::ofstream outputFile("./correlation.txt"); // Set output file
 
-	//
+	// Iterate over all values in the array and write to file
 	for (const auto& value : arr) {
 		outputFile << value << "\n";
 	}
@@ -274,7 +274,7 @@ vector<double> ReadFromFile() {
 }
 
 /// <summary>
-/// Method to compare the results of the sequential 
+/// Method to compare the results of the sequential against that of the parallel.
 /// </summary>
 /// <param name="seqCorrArr">
 /// 
@@ -286,35 +286,38 @@ vector<double> ReadFromFile() {
 /// 
 /// </returns>
 bool CompareResults(vector<double> seqCorrArr, vector<double> parCorrArr) {
-	/*if (seqCorrArr == parCorrArr) {
-		printf("Sequential and Parallel results match.");
-		return true;
-	}
-	else {
-		printf("Sequential and Parallel results do not match.");
-		return false;
-	}*/
-	int count = 0;
+	double epsilon = 1e-5; // Set epsilon for maximum difference
+	double difference = 0.0; // Initialise difference variable to 0
 
+	// Iterate through all results
 	for (int i = 0; i < seqCorrArr.size(); i++) {
-		//printf("Sequential: %f | Parallel: %f\n", seqCorrArr.at(i), parCorrArr.at(i));
-		if (seqCorrArr.at(i) != parCorrArr.at(i)) {
-			printf("Mismatch at %d: %f and %f.", i, seqCorrArr.at(i), parCorrArr.at(i));
-			count++;
+		// Calculate the difference between the two calculated correlations
+		difference = abs(seqCorrArr.at(i) - parCorrArr.at(i));
+
+		// If there is a significant difference in correlation
+		if (difference >= epsilon) {
+			// Print where the mismatch occurred
+			printf("Mismatch at %d: %.11f and %.11f.\n", i, seqCorrArr.at(i), parCorrArr.at(i));
+
+			return false; // Break the loop and return false
 		}
 	}
 
-	/// TODO:
-	///		[ ] Fix error where matching values are incorrectly listed as not matching
-	///		[ ] Verify that the program will return true when comparing two matching values
-	///		[ ] Extract program into a seperate project or even just file to be used later
-	///				as a check & balance for further parallelisations.
+	return true; // Default to return true for no mismatches found
+}
 
-	if (count > 0) {
-		return false;
+/// <summary>
+/// 
+/// </summary>
+/// <param name="resultMatch">
+/// 
+/// </param>
+void ExitCheck(bool resultMatch) {
+	if (resultMatch) {
+		printf("The parallel results match the sequential correlation values.\nExiting program...");
 	}
 	else {
-		return true;
+		printf("The parallel results do not match the sequential correlation values.\nExiting program...");
 	}
 }
 
@@ -341,14 +344,14 @@ class Bacteria
 	/// <summary>
 	/// 
 	/// </summary>
-private:
-	long* vector;
-	long* second;
-	long one_l[AA_NUMBER];
-	long indexs;
-	long total;
-	long total_l;
-	long complement;
+	private:
+		long* vector;
+		long* second;
+		long one_l[AA_NUMBER];
+		long indexs;
+		long total;
+		long total_l;
+		long complement;
 
 	/// <summary>
 	/// 
@@ -402,10 +405,10 @@ private:
 	/// <summary>
 	/// 
 	/// </summary>
-public:
-	long count;
-	double* tv;
-	long* ti;
+	public:
+		long count;
+		double* tv;
+		long* ti;
 
 	/// <summary>
 	/// 
@@ -639,25 +642,23 @@ int main(int argc, char* argv[])
 	Init();
 	ReadInputFile("list.txt");
 	vector<double> result = CompareAllBacteria();
-	WriteToFile(result);
-	vector<double> checkResult = ReadFromFile();
-	bool match = CompareResults(result, checkResult);
-	if (match) {
-		printf("The two vectors match.\n");
-	}
-	else {
-		printf("The two vectors do not match.\n");
-	}
 	time_t t2 = time(NULL);
 	printf("time elapsed: %lld seconds\n", t2 - t1);
-	return 0;
+
+	// WriteToFile(result); // Write the results to file for verification
+	vector<double> checkResult = ReadFromFile(); // Read sequential results from file
+
+	// Check the results match
+	ExitCheck(CompareResults(result, checkResult));
+	
+	return 0; // Exit
 }
 
 
 /// -----------------------------------------------------------------------------------------------------------------
 /// TODO:
 ///		[X] Add method to write output to file (binary)
-///		[ ] Add method to verify new output against binary file
+///		[X] Add method to verify new output against sequential results file
 ///		[ ] Parallelise high priority tasks
 ///		[ ] Convert triangular loops to linear where possible
 ///		[ ] Parallelise medium priority tasks
