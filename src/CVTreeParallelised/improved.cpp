@@ -146,7 +146,7 @@ public:
 			else
 				i_mod_M1++;
 
-			if (stochastic > EPSILON) 
+			if (stochastic > EPSILON)
 			{
 				t[i] = (vector[i] - stochastic) / stochastic;
 				count++;
@@ -154,7 +154,7 @@ public:
 			else
 				t[i] = 0;
 		}
-		
+
 		delete second_div_total;
 		delete vector;
 		delete second;

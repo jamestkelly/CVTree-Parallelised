@@ -35,6 +35,8 @@ short code[27] = { 0, 2, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, -1, 12, 13, 14, 
 /// <param name="arr">
 /// A vector of doubles, containing the correlation values as calculated to be written to the output file.
 /// </param>
+/// TODO:
+///		[ ] Edit this file to take a vector of vectors containing doubles, i.e. vector<vector<double>> corrArr;
 void WriteToFile(vector<double> arr) {
 	std::ofstream outputFile("./correlation.txt"); // Set output file
 
@@ -51,6 +53,8 @@ void WriteToFile(vector<double> arr) {
 /// <returns>
 /// A vector of doubles, containing the correlation values as calculated to be read from the input file.
 /// </returns>
+/// TODO:
+///		[ ] Edit this file to produce a vector of vectors containing doubles, i.e. vector<vector<double>> corrArr;
 vector<double> ReadFromFile() {
 	double num = 0.0; // Initialise value to store line
 	vector<double> inputResult; // Initialise vector to store results
@@ -428,38 +432,38 @@ vector<double> CompareAllBacteria()
 	// Initialise variables
 	vector<double> result; // Vector to store correlation values TODO: Convert to a 2D array
 	vector<vector<double>> corrVector;
-	int count = 0; // Initialise outer-loop c	ounter
-	const int num_iter = number_bacteria - 1; // Set number of iterations to the number of bacteria
+	int count = 0; // Initialise outer-loop counter
+	int total_iter = 0; // Set number of iterations to the number of bacteria
 	Bacteria** b = new Bacteria * [number_bacteria];
 
 	omp_set_dynamic(0);     // Explicitly disable dynamic teams
 	omp_set_num_threads(THREAD_NUM); // Use 4 threads for all consecutive parallel regions
+
 	// Load the bacteria objects
 	for (int i = 0; i < number_bacteria; i++) // Can be parallelised (HIGH PRIO)
 	{
 		b[i] = new Bacteria(bacteria_name[i]);
 		printf("load %d of %d\n", i + 1, number_bacteria);
 	}
-	
 
-	double* corrArr[39][40];
-
-	// Iterate through i and j to create vectors containing array sizes
+	// Iterate through i and j to create a vector of vectors containing empty
+	// values for the correlation results
 	for (int i = 0; i < number_bacteria - 1; i++) {
-		count = 0;
+		count = 0; // Reset counter to 0
 
 		for (int j = i + 1; j < number_bacteria; j++) {
-			count++;
+			count++; // Increment counter to reflect number of columns
+			total_iter++; // Increment the total count of iterations
 		}
 
 		vector<double> vec_row(count, 0.0); // Create a row of length 'j'
 		corrVector.push_back(vec_row); // Append row to vector
 	}
 
+	count = 0; // Reset counter to 0
 
 #pragma omp parallel
 	{
-
 #pragma omp for ordered schedule(dynamic)
 		for (int i = 0; i < number_bacteria - 1; i++) {
 			for (int j = i + 1; j < number_bacteria; j++) {
@@ -468,6 +472,12 @@ vector<double> CompareAllBacteria()
 				result.push_back(correlation);
 				printf("%.20lf\n", correlation);
 			}
+		}
+
+		// Iterate through all total iterations
+		for (int i = 0; i <= total_iter; i++) {
+			// Calculate the correlation and store in its corresponding position in the
+			// nested vector.
 		}
 
 		/*
