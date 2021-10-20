@@ -23,7 +23,7 @@ short code[27] = { 0, 2, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, -1, 12, 13, 14, 
 #define LEN				6
 #define AA_NUMBER		20
 #define	EPSILON			1e-010
-#define THREAD_NUM		4
+#define THREAD_NUM		8
 
 /// ------------------------------------------------------------------------------------------------------------- ///
 ///													New Methods													  ///
@@ -300,7 +300,8 @@ public:
 		}
 
 		count = 0;
-		double* t = new double[M];
+		double* t = new double[M]; // Allocate t outside as a thread local variable
+		// Each thread gets its own t
 
 		for (long i = 0; i < M; i++) // Can be parallelised (MEDIUM PRIO)
 		{
@@ -425,24 +426,51 @@ double CompareBacteria(Bacteria* b1, Bacteria* b2)
 vector<double> CompareAllBacteria()
 {
 	// Initialise variables
-	vector<double> result; // Vector to store correlation values
-	int count = 0; // Initialise outer-loop counter
-	int num_iter = number_bacteria - 1; // Set number of iterations to the number of bacteria
+	vector<double> result; // Vector to store correlation values TODO: Convert to a 2D array
+	vector<vector<double>> corrVector;
+	int count = 0; // Initialise outer-loop c	ounter
+	const int num_iter = number_bacteria - 1; // Set number of iterations to the number of bacteria
 	Bacteria** b = new Bacteria * [number_bacteria];
 
 	omp_set_dynamic(0);     // Explicitly disable dynamic teams
 	omp_set_num_threads(THREAD_NUM); // Use 4 threads for all consecutive parallel regions
-#pragma omp parallel
+	// Load the bacteria objects
+	for (int i = 0; i < number_bacteria; i++) // Can be parallelised (HIGH PRIO)
 	{
-		printf("Number of Threads: %d.\n", omp_get_num_threads());
-#pragma omp for ordered schedule(dynamic)
-		// Load the bacteria objects
-		for (int i = 0; i < number_bacteria; i++) // Can be parallelised (HIGH PRIO)
-		{
-			b[i] = new Bacteria(bacteria_name[i]);
-			printf("load %d of %d\n", i + 1, number_bacteria);
+		b[i] = new Bacteria(bacteria_name[i]);
+		printf("load %d of %d\n", i + 1, number_bacteria);
+	}
+	
+
+	double* corrArr[39][40];
+
+	// Iterate through i and j to create vectors containing array sizes
+	for (int i = 0; i < number_bacteria - 1; i++) {
+		count = 0;
+
+		for (int j = i + 1; j < number_bacteria; j++) {
+			count++;
 		}
 
+		vector<double> vec_row(count, 0.0); // Create a row of length 'j'
+		corrVector.push_back(vec_row); // Append row to vector
+	}
+
+
+#pragma omp parallel
+	{
+
+#pragma omp for ordered schedule(dynamic)
+		for (int i = 0; i < number_bacteria - 1; i++) {
+			for (int j = i + 1; j < number_bacteria; j++) {
+				printf("%2d %2d -> ", i, j); // TODO: Remove this after debugging
+				double correlation = CompareBacteria(b[i], b[j]);
+				result.push_back(correlation);
+				printf("%.20lf\n", correlation);
+			}
+		}
+
+		/*
 #pragma omp for ordered schedule(dynamic)
 		// Iterate through all bacteria and calculate correlation values.
 		for (int i = 0; i < num_iter; i++) { // Error C3020: 'i': index variable of OpenMP 'for' loop cannot be modified in loop body.
@@ -460,7 +488,8 @@ vector<double> CompareAllBacteria()
 			}
 		}
 	}
-
+*/
+	}
 	return result; // Return the resulting vector of correlation values
 }
 
