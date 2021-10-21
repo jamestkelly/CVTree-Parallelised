@@ -3,17 +3,28 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
-#include <assert.h>
 #include <vector>
 #include <fstream>
-#include <iterator>
-#include <string>
 #include <iostream>
-#include <omp.h>
+#include <iomanip>
+
 using namespace std;
 
 /// ------------------------------------------------------------------------------------------------------------- ///
-///									CVTree [Improved] Version | Parallelised									  ///
+///											CVTree [Improved] | Parallelised									  ///
+/// ------------------------------------------------------------------------------------------------------------- ///
+/// Author: Jim Tran Kelly | N9763686																			  ///
+///																												  ///
+/// Description: This script has been updated and parallelised for the purposes of CAB401 High Performance and    ///
+/// Parallel Computing at the Queensland University of Technology (QUT), Semester 2, 2021. The script in its      ///
+/// original form is a program to take a file as input through the command-line, containing the number of strings ///
+/// in the first line and following that several bacteria names. These names are then concatenated with .faa	  ///
+/// matching to files in the /data/ directory with gene names and their respective gene represented as DNA. The   ///
+/// program collects the "kmer" or subset of an entire gene and then compares that against other bacteria "kmers" ///
+/// and finds the correlation between any given bacteria. This application was found on the Blackboard Assignment ///
+/// tab for CAB401 as one of the provided projects that is available for parallelization.						  ///
+///																												  ///
+/// Version: 3.1																								  ///
 /// ------------------------------------------------------------------------------------------------------------- ///
 int number_bacteria;
 char** bacteria_name;
@@ -23,42 +34,47 @@ short code[27] = { 0, 2, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, -1, 12, 13, 14, 
 #define LEN				6
 #define AA_NUMBER		20
 #define	EPSILON			1e-010
-#define THREAD_NUM		8
 
 /// ------------------------------------------------------------------------------------------------------------- ///
 ///													New Methods													  ///
 /// ------------------------------------------------------------------------------------------------------------- ///
-/// <summary>
-/// Method to write results to an output file. This output comes in the expected format of a ".txt" file with the
-/// calculated results of the correlation values between any two given bacteria in the data set.
-/// </summary>
-/// <param name="arr">
-/// A vector of doubles, containing the correlation values as calculated to be written to the output file.
-/// </param>
-/// TODO:
-///		[ ] Edit this file to take a vector of vectors containing doubles, i.e. vector<vector<double>> corrArr;
-void WriteToFile(vector<double> arr) {
-	std::ofstream outputFile("./correlation.txt"); // Set output file
 
-	// Iterate over all values in the array and write to file
-	for (const auto& value : arr) {
-		outputFile << value << "\n";
+/// <summary>
+/// 
+/// </summary>
+/// <param name="corrArr">
+/// 
+/// </param>
+/// <param name="fileName">
+/// 
+/// </param>
+void WriteToFile(vector<vector<double>> corrArr, string fileName) {
+	std::ofstream outputFile(fileName); // Set output file
+	
+	for (int i = 0; i < corrArr.size(); i++) {
+		for (int j = 0; j < corrArr.at(i).size(); j++) {
+			outputFile << std::defaultfloat 
+				<< std::setprecision(std::numeric_limits<long double>::digits10) 
+				<< corrArr[i][j] << "\n";
+		}
 	}
 }
 
 /// <summary>
-/// Method to read results from an input file. This input comes in the expected format of a ".txt" file with the
-/// calculated results of the correlation values between any two given bacteria in the data set.
+/// 
 /// </summary>
+/// <param name="fileName">
+/// 
+/// </param>
 /// <returns>
-/// A vector of doubles, containing the correlation values as calculated to be read from the input file.
+/// 
 /// </returns>
-/// TODO:
-///		[ ] Edit this file to produce a vector of vectors containing doubles, i.e. vector<vector<double>> corrArr;
-vector<double> ReadFromFile() {
-	double num = 0.0; // Initialise value to store line
-	vector<double> inputResult; // Initialise vector to store results
-	std::ifstream inputFile("./correlation.txt", std::ios::in); // Set input file
+vector<double> ReadVectorFromFile(string fileName) {
+	double num = 0.0; // Initialise variable to store line contents
+	vector<double> inputResult; // Initialse a 1D vector to store file data
+
+	// Set input file
+	std::ifstream inputFile(fileName, std::ios::in); 
 
 	// Check to see the file was opened correctly
 	if (!inputFile.is_open()) {
@@ -71,70 +87,67 @@ vector<double> ReadFromFile() {
 		inputResult.push_back(num);
 	}
 
-	return inputResult; // Return the resulting vector
+	return inputResult; // Return the resulting vector of doubles
 }
 
 /// <summary>
-/// Method to perform an element-wise comparison of two vectors of doubles. These vectors contain the
-/// correlation values calculated from the comparisons of bacteria.
+/// 
 /// </summary>
-/// <param name="seqCorrArr">
-/// The original correlation values as calculated previously through the use of the original best
-/// sequential version of the program.
-/// </param>
-/// <param name="parCorrArr">
-/// The correlation values as calculated in the current run of the program.
+/// <param name="corrVector">
+/// 
 /// </param>
 /// <returns>
-/// Returns a true or false value depending on the whether the results match, element per element. True
-/// is returned if all elements match to their corresponding values in the other vector, and False is
-/// returned otherwise.
+/// 
 /// </returns>
-bool CompareResults(vector<double> seqCorrArr, vector<double> parCorrArr) {
-	double epsilon = 1e-5; // Set epsilon for maximum difference
-	double difference = 0.0; // Initialise difference variable to 0
+vector<double> MakeVectorOneDimension(vector<vector<double>> corrVector) {
+	vector<double> resultVector; // Initialise one dimensional vector of doubles
 
-	// If the two vectors are not the same length, return false
-	if (parCorrArr.size() != seqCorrArr.size()) {
-		return false;
-	}
-
-	// Iterate through all results
-	for (int i = 0; i < seqCorrArr.size(); i++) {
-		// Calculate the difference between the two calculated correlations
-		difference = abs(seqCorrArr.at(i) - parCorrArr.at(i));
-
-		// If there is a significant difference in correlation
-		if (difference >= epsilon) {
-			// Print where the mismatch occurred
-			printf("Mismatch at %d: %.11f and %.11f.\n", i, seqCorrArr.at(i), parCorrArr.at(i));
-
-			return false; // Break the loop and return false
+	// Iterate through all values in the input vector
+	for (int i = 0; i < corrVector.size(); i++) {
+		for (int j = 0; j < corrVector[i].size(); j++) {
+			resultVector.push_back(corrVector[i][j]); // Append to the output vector
 		}
 	}
 
-	return true; // Default to return true for no mismatches found
+	return resultVector; // Return the resulting one dimensional vector of doubles
 }
 
 /// <summary>
-/// Method to print a message to the terminal, displaying whether or not the correlation values calculated
-/// match element for element.
+/// 
 /// </summary>
-/// <param name="resultMatch">
-/// A true or false value corresponding to the accuracy of the parallel results calculated.
+/// <param name="seqResult">
+/// 
 /// </param>
-void ExitCheck(bool resultMatch) {
-	if (resultMatch) {
-		printf("The parallel results match the sequential correlation values.\nExiting program...");
+/// <param name="parResult">
+/// 
+/// </param>
+void CompareResults(vector<double> seqResult, vector<double> parResult) {
+	double difference = 0.0; // Initialise difference variable to 0
+	int mismatchCount = 0; // Initialise a counter for the number of mismatches
+
+	// Iterate through all pairs of values
+	for (int i = 0; i < seqResult.size(); i++) {
+		difference = abs(seqResult[i] - parResult[i]); // Calculate the difference
+
+		// If there is a significant difference in correlation
+		if (difference >= EPSILON) {
+			mismatchCount++; // Increment the mismatches encountered
+		}
+	}
+
+	// Print corresponding message to the number of mismatches encountered
+	if (mismatchCount == 0) {
+		printf("The two vectors match, no mismatches encountered.\n");
 	}
 	else {
-		printf("The parallel results do not match the sequential correlation values.\nExiting program...");
+		printf("A total of %d mismatches between the sequential and parallel results were found.\n", mismatchCount);
 	}
 }
 
 /// ------------------------------------------------------------------------------------------------------------- ///
-///													Unchanged Methods											  ///
+///												Unchanged Methods												  ///
 /// ------------------------------------------------------------------------------------------------------------- ///
+
 /// <summary>
 /// 
 /// </summary>
@@ -150,44 +163,8 @@ void Init()
 /// <summary>
 /// 
 /// </summary>
-/// <param name="input_name">
-/// 
-/// </param>
-void ReadInputFile(const char* input_name)
-{
-	FILE* input_file;
-	errno_t OK = fopen_s(&input_file, input_name, "r");
-
-	if (OK != 0)
-	{
-		fprintf(stderr, "Error: failed to open file %s (Hint: check your working directory)\n", input_name);
-		exit(1);
-	}
-
-	fscanf_s(input_file, "%d", &number_bacteria);
-	bacteria_name = new char* [number_bacteria];
-
-	for (long i = 0; i < number_bacteria; i++) // Can be parallelised MAYBE (LOW PRIO)
-	{
-		char name[10];
-		fscanf_s(input_file, "%s", name, 10);
-		bacteria_name[i] = new char[20];
-		sprintf_s(bacteria_name[i], 20, "data/%s.faa", name);
-	}
-	fclose(input_file);
-}
-
-/// ------------------------------------------------------------------------------------------------------------- ///
-///													Modified Methods											  ///
-/// ------------------------------------------------------------------------------------------------------------- ///
-/// <summary>
-/// 
-/// </summary>
 class Bacteria
 {
-	/// <summary>
-	/// 
-	/// </summary>
 private:
 	long* vector;
 	long* second;
@@ -197,9 +174,6 @@ private:
 	long total_l;
 	long complement;
 
-	/// <summary>
-	/// 
-	/// </summary>
 	void InitVectors()
 	{
 		vector = new long[M];
@@ -212,10 +186,6 @@ private:
 		complement = 0;
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
-	/// <param name="buffer"></param>
 	void init_buffer(char* buffer)
 	{
 		complement++;
@@ -230,10 +200,6 @@ private:
 		second[indexs]++;
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
-	/// <param name="ch"></param>
 	void cont_buffer(char ch)
 	{
 		short enc = encode(ch);
@@ -246,18 +212,11 @@ private:
 		second[indexs]++;
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
 public:
 	long count;
 	double* tv;
 	long* ti;
 
-	/// <summary>
-	/// 
-	/// </summary>
-	/// <param name="filename"></param>
 	Bacteria(char* filename)
 	{
 		FILE* bacteria_file;
@@ -294,20 +253,17 @@ public:
 		long i_div_M1 = 0;
 
 		double one_l_div_total[AA_NUMBER];
-		for (int i = 0; i < AA_NUMBER; i++) { // Can be parallelised 
+		for (int i = 0; i < AA_NUMBER; i++)
 			one_l_div_total[i] = (double)one_l[i] / total_l;
-		}
 
 		double* second_div_total = new double[M1];
-		for (int i = 0; i < M1; i++) {
+		for (int i = 0; i < M1; i++)
 			second_div_total[i] = (double)second[i] / total_plus_complement;
-		}
 
 		count = 0;
-		double* t = new double[M]; // Allocate t outside as a thread local variable
-		// Each thread gets its own t
+		double* t = new double[M];
 
-		for (long i = 0; i < M; i++) // Can be parallelised (MEDIUM PRIO)
+		for (long i = 0; i < M; i++)
 		{
 			double p1 = second_div_total[i_div_aa_number];
 			double p2 = one_l_div_total[i_mod_aa_number];
@@ -348,7 +304,7 @@ public:
 		ti = new long[count];
 
 		int pos = 0;
-		for (long i = 0; i < M; i++) // Can be parallelised (MEDIUM PRIO)
+		for (long i = 0; i < M; i++)
 		{
 			if (t[i] != 0)
 			{
@@ -366,15 +322,37 @@ public:
 /// <summary>
 /// 
 /// </summary>
-/// <param name="b1">
+/// <param name="input_name"></param>
+void ReadInputFile(const char* input_name)
+{
+	FILE* input_file;
+	errno_t OK = fopen_s(&input_file, input_name, "r");
+
+	if (OK != 0)
+	{
+		fprintf(stderr, "Error: failed to open file %s (Hint: check your working directory)\n", input_name);
+		exit(1);
+	}
+
+	fscanf_s(input_file, "%d", &number_bacteria);
+	bacteria_name = new char* [number_bacteria];
+
+	for (long i = 0; i < number_bacteria; i++)
+	{
+		char name[10];
+		fscanf_s(input_file, "%s", name, 10);
+		bacteria_name[i] = new char[20];
+		sprintf_s(bacteria_name[i], 20, "data/%s.faa", name);
+	}
+	fclose(input_file);
+}
+
+/// <summary>
 /// 
-/// </param>
-/// <param name="b2">
-/// 
-/// </param>
-/// <returns>
-/// 
-/// </returns>
+/// </summary>
+/// <param name="b1"></param>
+/// <param name="b2"></param>
+/// <returns></returns>
 double CompareBacteria(Bacteria* b1, Bacteria* b2)
 {
 	double correlation = 0;
@@ -423,119 +401,92 @@ double CompareBacteria(Bacteria* b1, Bacteria* b2)
 	return correlation / (sqrt(vector_len1) * sqrt(vector_len2));
 }
 
+/// ------------------------------------------------------------------------------------------------------------- ///
+///												Modified Methods												  ///
+/// ------------------------------------------------------------------------------------------------------------- ///
+
 /// <summary>
-/// TODO:
-///		[ ] Add description of method and an explanation of the changes made to the source code.
+/// 
 /// </summary>
-vector<double> CompareAllBacteria()
+/// <returns>
+/// 
+/// </returns>
+vector<vector<double>> CompareAllBacteria()
 {
-	// Initialise variables
-	vector<double> result; // Vector to store correlation values TODO: Convert to a 2D array
-	vector<vector<double>> corrVector;
-	int count = 0; // Initialise outer-loop counter
-	int total_iter = 0; // Set number of iterations to the number of bacteria
+	// Initialise counter variables
+	int rowCount = 0;
+	int colCount = 1;
+	int total_iter = 0;
+
+	// Initialise a 2D vector to size of number of bacteria
+	vector<vector<double>> corrVector(number_bacteria);
+
 	Bacteria** b = new Bacteria * [number_bacteria];
 
-	omp_set_dynamic(0);     // Explicitly disable dynamic teams
-	omp_set_num_threads(THREAD_NUM); // Use 4 threads for all consecutive parallel regions
-
-	// Load the bacteria objects
-	for (int i = 0; i < number_bacteria; i++) // Can be parallelised (HIGH PRIO)
+	// Iterate through all bacteria and load them
+	for (int i = 0; i < number_bacteria; i++)
 	{
+		//printf("load %d of %d\n", i + 1, number_bacteria);
 		b[i] = new Bacteria(bacteria_name[i]);
-		printf("load %d of %d\n", i + 1, number_bacteria);
 	}
 
-	// Iterate through i and j to create a vector of vectors containing empty
-	// values for the correlation results
+	// Iterate to create the 2D vector to store correlation values
 	for (int i = 0; i < number_bacteria - 1; i++) {
-		count = 0; // Reset counter to 0
+		// Initialise the 'row' of values
+		corrVector[i] = vector<double>(number_bacteria, 0.0);
 
-		for (int j = i + 1; j < number_bacteria; j++) {
-			count++; // Increment counter to reflect number of columns
-			total_iter++; // Increment the total count of iterations
-		}
-
-		vector<double> vec_row(count, 0.0); // Create a row of length 'j'
-		corrVector.push_back(vec_row); // Append row to vector
-	}
-
-	count = 0; // Reset counter to 0
-
-#pragma omp parallel
-	{
-#pragma omp for ordered schedule(dynamic)
-		for (int i = 0; i < number_bacteria - 1; i++) {
-			for (int j = i + 1; j < number_bacteria; j++) {
-				printf("%2d %2d -> ", i, j); // TODO: Remove this after debugging
-				double correlation = CompareBacteria(b[i], b[j]);
-				result.push_back(correlation);
-				printf("%.20lf\n", correlation);
-			}
-		}
-
-		// Iterate through all total iterations
-		for (int i = 0; i <= total_iter; i++) {
-			// Calculate the correlation and store in its corresponding position in the
-			// nested vector.
-		}
-
-		/*
-#pragma omp for ordered schedule(dynamic)
-		// Iterate through all bacteria and calculate correlation values.
-		for (int i = 0; i < num_iter; i++) { // Error C3020: 'i': index variable of OpenMP 'for' loop cannot be modified in loop body.
-			// Potentially can fix this by having an operation or method (function) to calculate the total number of expected iterations
-			//  off 'number_bacteria', i.e. with 'number_bacteria = 41', then there are 820 expected iterations.
-			printf("%2d %2d -> ", count, i + 1); // TODO: Remove this after debugging
-			double correlation = CompareBacteria(b[count], b[i + 1]);
-			result.push_back(correlation);
-			printf("%.20lf\n", correlation); // TODO: Remove this after debugging
-
-			// If the loop is about to reach the number of iterations
-			if (i == num_iter - 1) {
-				i = count; // Set 'i' to the counter's value
-				count++; // Increment the counter
-			}
+		for (int j = 0; j < number_bacteria; j++) {
+			total_iter++; // Increment total iteration counter
 		}
 	}
-*/
+
+	// Iterate through all possible comparisons
+	for (int i = 0; i < total_iter / 2; i++) {
+		//printf("Iteration: %d | %2d %2d -> ", i, rowCount, colCount); // TODO: Remove this after debugging
+		//double correlation = CompareBacteria(b[rowCount], b[colCount]);
+		//printf("%.20lf\n", correlation); // TODO: Remove this after debugging
+
+		corrVector[rowCount][colCount] = CompareBacteria(b[rowCount], b[colCount]);
+
+		// If the 'column' count reaches the number of bacteria
+		if (colCount == number_bacteria - 1) {
+			rowCount++; // Increment the 'row' count
+			colCount = rowCount + 1; // Set the 'column' count to the 'row' count plus one
+		}
+		else {
+			colCount++; // Increment the 'column' count
+		}
 	}
-	return result; // Return the resulting vector of correlation values
+
+	// Return the resulting 2D vector containing the results
+	return corrVector;
 }
 
 /// <summary>
-/// TODO:
-///		[ ] Add description of method and an explanation of the changes made to the source code.
+/// 
 /// </summary>
-/// <param name="argc">
-/// 
-/// </param>
-/// <param name="argv">
-/// 
-/// </param>
-/// <returns>
-///		[ ] Add description of what the method returns.
-/// </returns>
+/// <param name="argc"></param>
+/// <param name="argv"></param>
+/// <returns></returns>
 int main(int argc, char* argv[])
 {
+	printf("Starting operations...\n");
 	time_t t1 = time(NULL);
 
 	Init();
 	ReadInputFile("list.txt");
-	vector<double> parResult = CompareAllBacteria();
+	vector<vector<double>> resultVec = CompareAllBacteria();
 	time_t t2 = time(NULL);
 	printf("time elapsed: %lld seconds\n", t2 - t1);
+	printf("Correlation operations complete...\n");
 
-
-	// WriteToFile(result); // Write the results to file for verification
-	vector<double> seqResult = ReadFromFile(); // Read sequential results from file
-
-	// Check the results match
-	ExitCheck(CompareResults(seqResult, parResult));
+	//WriteToFile(resultVec, "./correlation.txt"); // Write the sequential results to output file
+	printf("Comparing results...\n");
+	vector<double> seqResult = ReadVectorFromFile("./correlation.txt"); // Read sequential results from file
+	vector<double> parResult = MakeVectorOneDimension(resultVec); // Convert the vector to one dimension
 	
-	return 0; // Exit
-}
+	// Verify the results are the same
+	CompareResults(seqResult, parResult); 
 
-/// ------------------------------------------------------------------------------------------------------------- ///
-///														EOF														  ///
-/// ------------------------------------------------------------------------------------------------------------- ///
+	return 0;
+}
