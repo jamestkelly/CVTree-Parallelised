@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <omp.h>
 
 using namespace std;
 
@@ -24,20 +25,46 @@ using namespace std;
 /// and finds the correlation between any given bacteria. This application was found on the Blackboard Assignment ///
 /// tab for CAB401 as one of the provided projects that is available for parallelization.						  ///
 ///																												  ///
-/// Version: 3.1																								  ///
+/// Version: 6.5																								  ///
 /// ------------------------------------------------------------------------------------------------------------- ///
 int number_bacteria;
 char** bacteria_name;
 long M, M1, M2;
 short code[27] = { 0, 2, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, -1, 12, 13, 14, 15, 16, 1, 17, 18, 5, 19, 3 };
+int numIter;
 #define encode(ch)		code[ch-'A']
 #define LEN				6
 #define AA_NUMBER		20
 #define	EPSILON			1e-010
+#define NUM_THREADS		4 // Define number of threads to use
 
 /// ------------------------------------------------------------------------------------------------------------- ///
 ///													New Methods													  ///
 /// ------------------------------------------------------------------------------------------------------------- ///
+
+/// <summary>
+/// 
+/// </summary>
+/// <param name="corrVector">
+/// 
+/// </param>
+/// <returns>
+/// 
+/// </returns>
+vector<double> MakeVectorOneDimension(vector<vector<double>> corrVector) {
+	vector<double> resultVector; // Initialise one dimensional vector of doubles
+
+	// Iterate through all values in the input vector
+	for (int i = 0; i < corrVector.size(); i++) {
+		for (int j = 0; j < corrVector[i].size(); j++) {
+			if (corrVector[i][j] != 0.0) { // Ignore 0.0 values
+				resultVector.push_back(corrVector[i][j]); // Append to the output vector
+			}
+		}
+	}
+
+	return resultVector; // Return the resulting one dimensional vector of doubles
+}
 
 /// <summary>
 /// 
@@ -48,15 +75,15 @@ short code[27] = { 0, 2, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, -1, 12, 13, 14, 
 /// <param name="fileName">
 /// 
 /// </param>
-void WriteToFile(vector<vector<double>> corrArr, string fileName) {
+void WriteToFile(vector<vector<double>> corrVector, string fileName) { // Try replacing with Wayne code from Week 1
 	std::ofstream outputFile(fileName); // Set output file
-	
-	for (int i = 0; i < corrArr.size(); i++) {
-		for (int j = 0; j < corrArr.at(i).size(); j++) {
-			outputFile << std::defaultfloat 
-				<< std::setprecision(std::numeric_limits<long double>::digits10) 
-				<< corrArr[i][j] << "\n";
-		}
+
+	vector<double> outputVector = MakeVectorOneDimension(corrVector);
+
+	for (const auto& value : outputVector) {
+		outputFile << std::defaultfloat
+			<< std::setprecision(std::numeric_limits<long double>::digits10)
+			<< value << "\n";
 	}
 }
 
@@ -74,7 +101,7 @@ vector<double> ReadVectorFromFile(string fileName) {
 	vector<double> inputResult; // Initialse a 1D vector to store file data
 
 	// Set input file
-	std::ifstream inputFile(fileName, std::ios::in); 
+	std::ifstream inputFile(fileName, std::ios::in);
 
 	// Check to see the file was opened correctly
 	if (!inputFile.is_open()) {
@@ -88,28 +115,6 @@ vector<double> ReadVectorFromFile(string fileName) {
 	}
 
 	return inputResult; // Return the resulting vector of doubles
-}
-
-/// <summary>
-/// 
-/// </summary>
-/// <param name="corrVector">
-/// 
-/// </param>
-/// <returns>
-/// 
-/// </returns>
-vector<double> MakeVectorOneDimension(vector<vector<double>> corrVector) {
-	vector<double> resultVector; // Initialise one dimensional vector of doubles
-
-	// Iterate through all values in the input vector
-	for (int i = 0; i < corrVector.size(); i++) {
-		for (int j = 0; j < corrVector[i].size(); j++) {
-			resultVector.push_back(corrVector[i][j]); // Append to the output vector
-		}
-	}
-
-	return resultVector; // Return the resulting one dimensional vector of doubles
 }
 
 /// <summary>
@@ -131,6 +136,8 @@ void CompareResults(vector<double> seqResult, vector<double> parResult) {
 
 		// If there is a significant difference in correlation
 		if (difference >= EPSILON) {
+			printf("Mismatch of: %.20f at position %d\n", difference, i);
+			printf("Sequential: %.20f | Parallel: %.20f\n", seqResult[i], parResult[i]);
 			mismatchCount++; // Increment the mismatches encountered
 		}
 	}
@@ -142,6 +149,12 @@ void CompareResults(vector<double> seqResult, vector<double> parResult) {
 	else {
 		printf("A total of %d mismatches between the sequential and parallel results were found.\n", mismatchCount);
 	}
+}
+
+void SetThreads(int numThreads) {
+	// Set the number of threads
+	omp_set_num_threads(numThreads);
+	printf("Running with %d threads.\n", omp_get_thread_num());
 }
 
 /// ------------------------------------------------------------------------------------------------------------- ///
@@ -296,7 +309,7 @@ public:
 				t[i] = 0;
 		}
 
-		delete second_div_total;
+		delete[] second_div_total; // Fix to remove Warning C6283
 		delete vector;
 		delete second;
 
@@ -313,7 +326,7 @@ public:
 				pos++;
 			}
 		}
-		delete t;
+		delete[] t; // Fix to remove Warning C6283
 
 		fclose(bacteria_file);
 	}
@@ -413,48 +426,27 @@ double CompareBacteria(Bacteria* b1, Bacteria* b2)
 /// </returns>
 vector<vector<double>> CompareAllBacteria()
 {
-	// Initialise counter variables
-	int rowCount = 0;
-	int colCount = 1;
-	int total_iter = 0;
-
 	// Initialise a 2D vector to size of number of bacteria
 	vector<vector<double>> corrVector(number_bacteria);
 
 	Bacteria** b = new Bacteria * [number_bacteria];
 
+#pragma omp parallel for schedule(dynamic)
 	// Iterate through all bacteria and load them
 	for (int i = 0; i < number_bacteria; i++)
 	{
-		//printf("load %d of %d\n", i + 1, number_bacteria);
+		//printf("load %d of %d\n", i + 1, number_bacteria); // Removed to improve execution time
 		b[i] = new Bacteria(bacteria_name[i]);
 	}
 
-	// Iterate to create the 2D vector to store correlation values
+#pragma omp parallel for schedule(dynamic)
 	for (int i = 0; i < number_bacteria - 1; i++) {
-		// Initialise the 'row' of values
+		// Initialise the row of columns to store correlation values
 		corrVector[i] = vector<double>(number_bacteria, 0.0);
 
-		for (int j = 0; j < number_bacteria; j++) {
-			total_iter++; // Increment total iteration counter
-		}
-	}
-
-	// Iterate through all possible comparisons
-	for (int i = 0; i < total_iter / 2; i++) {
-		//printf("Iteration: %d | %2d %2d -> ", i, rowCount, colCount); // TODO: Remove this after debugging
-		//double correlation = CompareBacteria(b[rowCount], b[colCount]);
-		//printf("%.20lf\n", correlation); // TODO: Remove this after debugging
-
-		corrVector[rowCount][colCount] = CompareBacteria(b[rowCount], b[colCount]);
-
-		// If the 'column' count reaches the number of bacteria
-		if (colCount == number_bacteria - 1) {
-			rowCount++; // Increment the 'row' count
-			colCount = rowCount + 1; // Set the 'column' count to the 'row' count plus one
-		}
-		else {
-			colCount++; // Increment the 'column' count
+		for (int j = i + 1; j < number_bacteria; j++) {
+			double correlation = CompareBacteria(b[i], b[j]); // Calculate the correlation
+			corrVector[i][j] = correlation; // Store in array
 		}
 	}
 
@@ -471,6 +463,8 @@ vector<vector<double>> CompareAllBacteria()
 int main(int argc, char* argv[])
 {
 	printf("Starting operations...\n");
+	SetThreads(omp_get_max_threads());
+
 	time_t t1 = time(NULL);
 
 	Init();
@@ -480,13 +474,14 @@ int main(int argc, char* argv[])
 	printf("time elapsed: %lld seconds\n", t2 - t1);
 	printf("Correlation operations complete...\n");
 
-	//WriteToFile(resultVec, "./correlation.txt"); // Write the sequential results to output file
+	WriteToFile(resultVec, "./correlation.txt"); // Write the sequential results to output file
+	
 	printf("Comparing results...\n");
 	vector<double> seqResult = ReadVectorFromFile("./correlation.txt"); // Read sequential results from file
 	vector<double> parResult = MakeVectorOneDimension(resultVec); // Convert the vector to one dimension
-	
+
 	// Verify the results are the same
 	CompareResults(seqResult, parResult); 
 
-	return 0;
+	return 0; // Exit program
 }

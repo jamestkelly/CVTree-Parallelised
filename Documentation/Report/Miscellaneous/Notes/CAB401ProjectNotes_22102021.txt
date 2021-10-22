@@ -1,0 +1,72 @@
+Notes for Report CAB401
+>> 22/10/2021
+>> Attempts to create a linear loop were unsuccessful at this time. As such,
+>> I've decided to attempt parallelisation in other regions of the code to achieve
+>> this. The code used in the attempt to make the loop linear is as follows:
+------------------------------------------------------------------------------------------------------------
+vector<vector<double>> CompareAllBacteria()
+{
+	// Initialise counter variables
+	int rowCount = 0;
+	int colCount = 1;
+	int total_iter = 0;
+
+	// Initialise a 2D vector to size of number of bacteria
+	vector<vector<double>> corrVector(number_bacteria);
+
+	Bacteria** b = new Bacteria * [number_bacteria];
+
+	// Iterate through all bacteria and load them
+	for (int i = 0; i < number_bacteria; i++)
+	{
+		//printf("load %d of %d\n", i + 1, number_bacteria); // TODO: Remove this after debugging
+		b[i] = new Bacteria(bacteria_name[i]);
+	}
+
+	// Iterate to create the 2D vector to store correlation values
+	for (int i = 0; i < number_bacteria - 1; i++) {
+		// Initialise the 'row' of values
+		corrVector[i] = vector<double>(number_bacteria, 0.0);
+
+		for (int j = 0; j < number_bacteria; j++) {
+			total_iter++; // Increment total iteration counter
+		}
+	}
+
+	numIter = total_iter / 2; // Halve the total number of iterations
+
+#pragma omp parallel
+	{
+#pragma omp for
+		for (int i = 0; i < numIter; i++) {
+			//printf("Iteration: %d | %2d %2d -> ", i, rowCount, colCount); // TODO: Remove this after debugging
+			//double correlation = CompareBacteria(b[rowCount], b[colCount]);
+			//printf("%.20lf\n", correlation); // TODO: Remove this after debugging
+
+			double correlation = CompareBacteria(b[rowCount], b[colCount]);
+#pragma omp critical
+			corrVector[rowCount][colCount] = correlation;
+			//corrVector[rowCount][colCount] = CompareBacteria(b[rowCount], b[colCount]); // Store the correlation value
+
+			// If the 'column' count reaches the number of bacteria
+			if (colCount == number_bacteria - 1) {
+				rowCount++; // Increment the 'row' count
+				colCount = rowCount + 1; // Set the 'column' count to the 'row' count plus one
+			}
+			else {
+				colCount++; // Increment the 'column' count
+			}
+		}
+	}
+	// Return the resulting 2D vector containing the results
+	return corrVector;
+}
+------------------------------------------------------------------------------------------------------------
+
+>> If I get time during the Workshop, I might be able to ask Lawrence how to fix this to maybe get it
+>> working for the final product.
+
+------------------------------------------------------------------------------------------------------------
+>> 22/10/2021 | 22:44
+>> Added [] to lines 312 and 329 to deal with Warning C6283, there was no real changes made to the overall
+>> performance of the progam. Need to investigate this further later.
