@@ -62,11 +62,13 @@ vector<vector<double>> CompareAllBacteria()
 	return corrVector;
 }
 ------------------------------------------------------------------------------------------------------------
-
 >> If I get time during the Workshop, I might be able to ask Lawrence how to fix this to maybe get it
 >> working for the final product.
-
 ------------------------------------------------------------------------------------------------------------
 >> 22/10/2021 | 22:44
 >> Added [] to lines 312 and 329 to deal with Warning C6283, there was no real changes made to the overall
 >> performance of the progam. Need to investigate this further later.
+------------------------------------------------------------------------------------------------------------
+>> 23/10/2021 | 15:07
+>> Finalised using malloc() and free() on the array 't', minor improvements in performance for the
+>> sequential and in turn parallel versions of the application.

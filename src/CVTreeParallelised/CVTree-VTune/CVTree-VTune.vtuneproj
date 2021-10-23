@@ -29,10 +29,10 @@
        <targetName>launch</targetName>
        <result_directory.path>D:\Projects\CVTree-Parallelised\src\CVTreeParallelised\CVTree-VTune\r@@@{at}</result_directory.path>
        <use_app_dir_as_work_dir type="bool">true</use_app_dir_as_work_dir>
-       <launch_app.app_to_launch>D:\Projects\CVTree-Parallelised\src\CVTreeParallelised\Debug\CVTreeParallelised.exe</launch_app.app_to_launch>
+       <launch_app.app_to_launch>D:\Projects\CVTree-Parallelised\src\CVTreeParallelised\x64\Release\CVTreeParallelised.exe</launch_app.app_to_launch>
        <launch_app.app_parameters></launch_app.app_parameters>
        <launch.userappworkdir></launch.userappworkdir>
-       <launch_app.working_folder>D:\Projects\CVTree-Parallelised\src\CVTreeParallelised\Debug</launch_app.working_folder>
+       <launch_app.working_folder>D:\Projects\CVTree-Parallelised\src\CVTreeParallelised\x64\Release</launch_app.working_folder>
        <context>
         <contextValue>
          <id>allowMultipleRuns</id>
@@ -199,6 +199,35 @@
        <contextValue>
         <id>slowGoodFrameThreshold</id>
         <value type="double">40</value>
+       </contextValue>
+       <contextValue>
+        <id>stackSizeCollect</id>
+        <value>0</value>
+       </contextValue>
+      </knob_values>
+     </at_start_point>
+     <at_start_point>
+      <at_path>D:\Program Files\Intel\oneAPI\vtune\latest\config\analysis_type\threading_analysis.cfg</at_path>
+      <knob_values>
+       <contextValue>
+        <id>enableStackCollect</id>
+        <value type="bool">true</value>
+       </contextValue>
+       <contextValue>
+        <id>groupForCustomControl</id>
+        <value type="null"></value>
+       </contextValue>
+       <contextValue>
+        <id>initialViewpoint</id>
+        <value>%ThreadingEfficiencyViewpointName</value>
+       </contextValue>
+       <contextValue>
+        <id>samplingAndWaits</id>
+        <value>sw</value>
+       </contextValue>
+       <contextValue>
+        <id>samplingInterval</id>
+        <value type="double">1</value>
        </contextValue>
        <contextValue>
         <id>stackSizeCollect</id>

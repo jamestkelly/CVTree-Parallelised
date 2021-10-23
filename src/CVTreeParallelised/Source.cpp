@@ -7,6 +7,8 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <memory.h>
+#include <chrono>
 #include <omp.h>
 
 using namespace std;
@@ -25,18 +27,17 @@ using namespace std;
 /// and finds the correlation between any given bacteria. This application was found on the Blackboard Assignment ///
 /// tab for CAB401 as one of the provided projects that is available for parallelization.						  ///
 ///																												  ///
-/// Version: 6.5																								  ///
+/// Version: 7																								  ///
 /// ------------------------------------------------------------------------------------------------------------- ///
 int number_bacteria;
 char** bacteria_name;
 long M, M1, M2;
 short code[27] = { 0, 2, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, -1, 12, 13, 14, 15, 16, 1, 17, 18, 5, 19, 3 };
-int numIter;
+int numberThreads;
 #define encode(ch)		code[ch-'A']
 #define LEN				6
 #define AA_NUMBER		20
 #define	EPSILON			1e-010
-#define NUM_THREADS		4 // Define number of threads to use
 
 /// ------------------------------------------------------------------------------------------------------------- ///
 ///													New Methods													  ///
@@ -154,7 +155,8 @@ void CompareResults(vector<double> seqResult, vector<double> parResult) {
 void SetThreads(int numThreads) {
 	// Set the number of threads
 	omp_set_num_threads(numThreads);
-	printf("Running with %d threads.\n", omp_get_thread_num());
+	numberThreads = numThreads;
+	printf("Running with %d threads.\n", numThreads);
 }
 
 /// ------------------------------------------------------------------------------------------------------------- ///
@@ -227,8 +229,8 @@ private:
 
 public:
 	long count;
-	double* tv;
-	long* ti;
+	std::vector<double> tv;
+	std::vector<long> ti;
 
 	Bacteria(char* filename)
 	{
@@ -274,7 +276,6 @@ public:
 			second_div_total[i] = (double)second[i] / total_plus_complement;
 
 		count = 0;
-		double* t = new double[M];
 
 		for (long i = 0; i < M; i++)
 		{
@@ -302,35 +303,22 @@ public:
 
 			if (stochastic > EPSILON)
 			{
-				t[i] = (vector[i] - stochastic) / stochastic;
+				tv.push_back((vector[i] - stochastic) / stochastic);
+				ti.push_back(i);
 				count++;
 			}
-			else
-				t[i] = 0;
 		}
 
-		delete[] second_div_total; // Fix to remove Warning C6283
+		tv.resize(count);
+		ti.resize(count);
+		delete second_div_total;
 		delete vector;
 		delete second;
-
-		tv = new double[count];
-		ti = new long[count];
-
-		int pos = 0;
-		for (long i = 0; i < M; i++)
-		{
-			if (t[i] != 0)
-			{
-				tv[pos] = t[i];
-				ti[pos] = i;
-				pos++;
-			}
-		}
-		delete[] t; // Fix to remove Warning C6283
 
 		fclose(bacteria_file);
 	}
 };
+
 
 /// <summary>
 /// 
@@ -431,7 +419,41 @@ vector<vector<double>> CompareAllBacteria()
 
 	Bacteria** b = new Bacteria * [number_bacteria];
 
-#pragma omp parallel for schedule(dynamic)
+//#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel 
+	{	
+#pragma omp for schedule(dynamic)
+// Iterate through all bacteria and load them
+		for (int i = 0; i < number_bacteria; i++)
+		{
+			//printf("load %d of %d\n", i + 1, number_bacteria); // Removed to improve execution time
+			b[i] = new Bacteria(bacteria_name[i]);
+		}
+
+#pragma omp for schedule(dynamic)
+		//#pragma omp parallel for schedule(dynamic)
+		for (int i = 0; i < number_bacteria - 1; i++) {
+			// Initialise the row of columns to store correlation values
+			corrVector[i] = vector<double>(number_bacteria, 0.0);
+
+			for (int j = i + 1; j < number_bacteria; j++) {
+				double correlation = CompareBacteria(b[i], b[j]); // Calculate the correlation
+				corrVector[i][j] = correlation; // Store in array
+			}
+		}
+	}
+
+	// Return the resulting 2D vector containing the results
+	return corrVector;
+}
+
+vector<vector<double>> CompareAllBacteriaSequential()
+{
+	// Initialise a 2D vector to size of number of bacteria
+	vector<vector<double>> corrVector(number_bacteria);
+
+	Bacteria** b = new Bacteria * [number_bacteria];
+
 	// Iterate through all bacteria and load them
 	for (int i = 0; i < number_bacteria; i++)
 	{
@@ -439,7 +461,7 @@ vector<vector<double>> CompareAllBacteria()
 		b[i] = new Bacteria(bacteria_name[i]);
 	}
 
-#pragma omp parallel for schedule(dynamic)
+	//#pragma omp parallel for schedule(dynamic)
 	for (int i = 0; i < number_bacteria - 1; i++) {
 		// Initialise the row of columns to store correlation values
 		corrVector[i] = vector<double>(number_bacteria, 0.0);
@@ -457,31 +479,75 @@ vector<vector<double>> CompareAllBacteria()
 /// <summary>
 /// 
 /// </summary>
+/// <returns></returns>
+void RunTests(int numTests, int numThreads) {
+	SetThreads(numThreads); // Set the number of threads
+	double* durations = new double[numTests];
+
+	for (int i = 0; i < numTests; i++) {
+		printf("Starting test %d of %d.\n", i + 1, numTests);
+		auto start = chrono::high_resolution_clock::now(); // Fetch the start time
+
+		Init();
+		ReadInputFile("list.txt");
+		vector<vector<double>> resultVec = CompareAllBacteria();
+
+		auto end = chrono::high_resolution_clock::now(); // Fetch the end time
+		chrono::duration<double> elapsed = end - start; // Calculate the total time elapsed
+		//printf("time elapsed: %.10f seconds\n", elapsed);
+
+		vector<double> seqResult = ReadVectorFromFile("./correlation.txt"); // Read sequential results from file
+		vector<double> parResult = MakeVectorOneDimension(resultVec); // Convert the vector to one dimension
+
+		// Verify the results are the same
+		CompareResults(seqResult, parResult);
+
+		durations[i] = elapsed.count();
+	}
+
+	for (int i = 0; i < numTests; i++) {
+		printf("%.10f\n", durations[i]);
+	}
+}
+
+void RunSequentialTest(int numTests) {
+	double* durations = new double[numTests];
+
+	for (int i = 0; i < numTests; i++) {
+		printf("Starting test %d of %d.\n", i + 1, numTests);
+		auto start = chrono::high_resolution_clock::now(); // Fetch the start time
+
+		Init();
+		ReadInputFile("list.txt");
+		vector<vector<double>> resultVec = CompareAllBacteriaSequential();
+
+		auto end = chrono::high_resolution_clock::now(); // Fetch the end time
+		chrono::duration<double> elapsed = end - start; // Calculate the total time elapsed
+		//printf("time elapsed: %.10f seconds\n", elapsed);
+
+		vector<double> seqResult = ReadVectorFromFile("./correlation.txt"); // Read sequential results from file
+		vector<double> parResult = MakeVectorOneDimension(resultVec); // Convert the vector to one dimension
+
+		// Verify the results are the same
+		CompareResults(seqResult, parResult);
+
+		durations[i] = elapsed.count();
+	}
+
+	for (int i = 0; i < numTests; i++) {
+		printf("%.10f\n", durations[i]);
+	}
+}
+
+/// <summary>
+/// 
+/// </summary>
 /// <param name="argc"></param>
 /// <param name="argv"></param>
 /// <returns></returns>
 int main(int argc, char* argv[])
 {
-	printf("Starting operations...\n");
-	SetThreads(omp_get_max_threads());
-
-	time_t t1 = time(NULL);
-
-	Init();
-	ReadInputFile("list.txt");
-	vector<vector<double>> resultVec = CompareAllBacteria();
-	time_t t2 = time(NULL);
-	printf("time elapsed: %lld seconds\n", t2 - t1);
-	printf("Correlation operations complete...\n");
-
-	WriteToFile(resultVec, "./correlation.txt"); // Write the sequential results to output file
-	
-	printf("Comparing results...\n");
-	vector<double> seqResult = ReadVectorFromFile("./correlation.txt"); // Read sequential results from file
-	vector<double> parResult = MakeVectorOneDimension(resultVec); // Convert the vector to one dimension
-
-	// Verify the results are the same
-	CompareResults(seqResult, parResult); 
-
+	RunTests(10, 1);
+	//RunSequentialTest(10);
 	return 0; // Exit program
 }
