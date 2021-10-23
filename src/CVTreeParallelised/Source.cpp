@@ -447,6 +447,53 @@ vector<vector<double>> CompareAllBacteria()
 	return corrVector;
 }
 
+/// <summary>
+///	TODO:
+///		[ ] Test this linear loop method to verify it works the same
+/// </summary>
+/// <returns>
+///
+/// </returns>
+vector<vector<double>> CompareAllBacteriaLinear() {
+	// Allocate a square matrix
+	//double** corrArr = new double*[number_bacteria];
+	vector<vector<double>> corrVector(number_bacteria);
+
+	for (int i = 0; i < number_bacteria; i++) {
+		corrVector[i] = vector<double>(number_bacteria, 0.0);
+	}
+
+	// Initialise two vectors of integers
+	vector<int> I;
+	vector<int> J;
+
+	// Populate vectors
+	for (int i = 0; i < number_bacteria; i++) {
+		for (int j = i + 1; j < number_bacteria; j++) {
+			I.push_back(i);
+			J.push_back(j);
+		}
+	}
+
+	Bacteria** b = new Bacteria * [number_bacteria];
+
+	// Iterate through all bacteria and load them
+	for (int i = 0; i < number_bacteria; i++)
+	{
+		//printf("load %d of %d\n", i + 1, number_bacteria); // Removed to improve execution time
+		b[i] = new Bacteria(bacteria_name[i]);
+	}
+
+	// Using a one-dimensional iteration space
+	for (int k = 0; k < I.size(); k++) {
+		int i = I[k];
+		int j = J[k];
+		corrVector[i][j] = CompareBacteria(b[i], b[j]);
+	}
+
+	return corrVector;
+}
+
 vector<vector<double>> CompareAllBacteriaSequential()
 {
 	// Initialise a 2D vector to size of number of bacteria
