@@ -1,3 +1,22 @@
+/// ------------------------------------------------------------------------------------------------------------- ///
+///											CVTree [Improved] | Parallelised									  ///
+/// ------------------------------------------------------------------------------------------------------------- ///
+/// Author: Jim Tran Kelly | N9763686																			  ///
+/// ------------------------------------------------------------------------------------------------------------- ///
+/// Description: This script has been updated and parallelised for the purposes of CAB401 High Performance and    ///
+/// Parallel Computing at the Queensland University of Technology (QUT), Semester 2, 2021. The script in its      ///
+/// original form is a program to take a file as input through the command-line, containing the number of strings ///
+/// in the first line and following that several bacteria names. These names are then concatenated with .faa	  ///
+/// matching to files in the /data/ directory with gene names and their respective gene represented as DNA. The   ///
+/// program collects the "kmer" or subset of an entire gene and then compares that against other bacteria "kmers" ///
+/// and finds the correlation between any given bacteria. This application was found on the Blackboard Assignment ///
+/// tab for CAB401 as one of the provided projects that is available for parallelization. This program has been   ///
+/// parallelised using OpenMP so as to be able to split for-loop operations across multiple threads or cores.     ///
+/// Additionally, there have been several changes made to the provided source code so as to improve the best      ///
+/// sequential version of the application.																		  ///
+/// ------------------------------------------------------------------------------------------------------------- ///
+/// Version: 10.2																								  ///
+/// ------------------------------------------------------------------------------------------------------------- ///
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,22 +31,7 @@
 #include <omp.h>
 using namespace std;
 
-/// ------------------------------------------------------------------------------------------------------------- ///
-///											CVTree [Improved] | Parallelised									  ///
-/// ------------------------------------------------------------------------------------------------------------- ///
-/// Author: Jim Tran Kelly | N9763686																			  ///
-///																												  ///
-/// Description: This script has been updated and parallelised for the purposes of CAB401 High Performance and    ///
-/// Parallel Computing at the Queensland University of Technology (QUT), Semester 2, 2021. The script in its      ///
-/// original form is a program to take a file as input through the command-line, containing the number of strings ///
-/// in the first line and following that several bacteria names. These names are then concatenated with .faa	  ///
-/// matching to files in the /data/ directory with gene names and their respective gene represented as DNA. The   ///
-/// program collects the "kmer" or subset of an entire gene and then compares that against other bacteria "kmers" ///
-/// and finds the correlation between any given bacteria. This application was found on the Blackboard Assignment ///
-/// tab for CAB401 as one of the provided projects that is available for parallelization.						  ///
-///																												  ///
-/// Version: 10.1																								  ///
-/// ------------------------------------------------------------------------------------------------------------- ///
+// Declare global variables
 int number_bacteria;
 char** bacteria_name;
 long M, M1, M2;
@@ -37,18 +41,15 @@ short code[27] = { 0, 2, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, -1, 12, 13, 14, 
 #define AA_NUMBER		20
 #define	EPSILON			1e-010
 
-/// ------------------------------------------------------------------------------------------------------------- ///
-///													New Methods													  ///
-/// ------------------------------------------------------------------------------------------------------------- ///
-
 /// <summary>
-/// 
+/// Converts a two dimensional (2D) vector to a one dimensional (1D) form for simplified data processing. This
+/// method iterates through all elements in the supplied 2D vector and appends them to a 1D vector for output.
 /// </summary>
 /// <param name="corrVector">
-/// 
+/// A two dimensional (2D) vector of doubles.
 /// </param>
 /// <returns>
-/// 
+/// A one dimensional (1D) vector of doubles.
 /// </returns>
 vector<double> MakeVectorOneDimension(vector<vector<double>> corrVector) {
 	vector<double> resultVector; // Initialise one dimensional vector of doubles
@@ -66,41 +67,23 @@ vector<double> MakeVectorOneDimension(vector<vector<double>> corrVector) {
 }
 
 /// <summary>
-/// 
-/// </summary>
-/// <param name="corrVector">
-/// 
-/// </param>
-/// <returns>
-/// 
-/// </returns>
-vector<double> RemoveEmptyValues(vector<double> corrVector) {
-	vector<double> output; // Initialise an empty vector
-
-	for (int i = 0; i < corrVector.size(); i++) {
-		if (corrVector[i] != 0) {
-			printf("%.20f\n", corrVector[i]);
-			output.push_back(corrVector[i]);
-		}
-	}
-
-	return output;
-}
-
-/// <summary>
-/// 
+/// Method to write a two dimensional (2D) vector of doubles to the specified file. This method overwrites
+/// the original contents of the file, or creates a new one with the same name, depending on the presence of
+/// a file matching in name to the parameter "fileName".
 /// </summary>
 /// <param name="corrArr">
-/// 
+/// The two dimensional (2D) vector of doubles to be written to a file on disk.
 /// </param>
 /// <param name="fileName">
-/// 
+/// The file name or path to be written to.
 /// </param>
 void WriteToFile(vector<vector<double>> corrVector, string fileName) {
 	std::ofstream outputFile(fileName); // Set output file
 
+	// Convert the 2D vector to 1D
 	vector<double> outputVector = MakeVectorOneDimension(corrVector);
 
+	// Iterate through all values and write them to the file
 	for (const auto& value : outputVector) {
 		outputFile << std::defaultfloat
 			<< std::setprecision(std::numeric_limits<long double>::digits10)
@@ -109,13 +92,14 @@ void WriteToFile(vector<vector<double>> corrVector, string fileName) {
 }
 
 /// <summary>
-/// 
+/// Method to read in a vector of doubles from a given file and store it for verification of parallel
+/// results.
 /// </summary>
 /// <param name="fileName">
-/// 
+/// The file name or path to be read from.
 /// </param>
 /// <returns>
-/// 
+/// A one dimensional (1D) vector of doubles.
 /// </returns>
 vector<double> ReadVectorFromFile(string fileName) {
 	double num = 0.0; // Initialise variable to store line contents
@@ -139,13 +123,14 @@ vector<double> ReadVectorFromFile(string fileName) {
 }
 
 /// <summary>
-/// 
+/// Method to compare two vectors of results against each other. This method is used to verify that the
+/// parallelised code's results match to those of the sequential program.
 /// </summary>
 /// <param name="seqResult">
-/// 
+/// A one dimensional (1D) vector containing doubles representing the sequential program's results.
 /// </param>
 /// <param name="parResult">
-/// 
+/// A one dimensional (1D) vector containing doubles representing the parallel program's results.
 /// </param>
 void CompareResults(vector<double> seqResult, vector<double> parResult) {
 	double difference = 0.0; // Initialise difference variable to 0
@@ -173,22 +158,18 @@ void CompareResults(vector<double> seqResult, vector<double> parResult) {
 }
 
 /// <summary>
-/// 
+/// Method to set the number of threads for the program to use.
 /// </summary>
 /// <param name="numThreads">
-/// 
+/// An integer indicating the number of threads to use.
 /// </param>
 void SetThreads(int numThreads) {
 	omp_set_num_threads(numThreads); // Set the number of threads
 	printf("Running with %d threads.\n", numThreads);
 }
 
-/// ------------------------------------------------------------------------------------------------------------- ///
-///												Unchanged Methods												  ///
-/// ------------------------------------------------------------------------------------------------------------- ///
-
 /// <summary>
-/// 
+/// Method to initialise variabels.
 /// </summary>
 void Init()
 {
@@ -200,7 +181,7 @@ void Init()
 }
 
 /// <summary>
-/// 
+/// Class for the instantiation of 'Bacteria' objects.
 /// </summary>
 class Bacteria
 {
@@ -214,7 +195,7 @@ private:
 	long complement;
 
 	/// <summary>
-	/// 
+	/// Method to initialise vectors for creation of 'Bacteria' objects.
 	/// </summary>
 	void InitVectors()
 	{
@@ -229,10 +210,10 @@ private:
 	}
 
 	/// <summary>
-	/// 
+	/// Method to initialse a buffer.
 	/// </summary>
 	/// <param name="buffer">
-	/// 
+	/// An array of 'chars'.
 	/// </param>
 	void init_buffer(char* buffer)
 	{
@@ -249,10 +230,10 @@ private:
 	}
 
 	/// <summary>
-	/// 
+	/// Method to continue the buffer.
 	/// </summary>
 	/// <param name="ch">
-	/// 
+	/// A character or 'char'.
 	/// </param>
 	void cont_buffer(char ch)
 	{
@@ -268,13 +249,15 @@ private:
 
 public:
 	long count;
-	std::vector<double> tv; //
-	std::vector<long> ti; //
+	std::vector<double> tv; // Initiallise tv as a vector of doubles
+	std::vector<long> ti; // Initialise ti as a vector of longs
 
 	/// <summary>
-	/// 
+	/// Constructor method for the creation of 'Bacteria' objects.
 	/// </summary>
-	/// <param name="filename"></param>
+	/// <param name="filename">
+	/// An array of 'char', containing the filename of the given 'Bacteria'.
+	/// </param>
 	Bacteria(char* filename)
 	{
 		FILE* bacteria_file;
@@ -356,6 +339,7 @@ public:
 			}
 		}
 
+		// Shrink the vectors to the number of elements
 		tv.shrink_to_fit();
 		ti.shrink_to_fit();
 
@@ -371,9 +355,11 @@ public:
 };
 
 /// <summary>
-/// 
+/// Method to read in a file containing information about a 'Bacteria'.
 /// </summary>
-/// <param name="input_name"></param>
+/// <param name="input_name">
+/// The input file name.
+///</param>
 void ReadInputFile(const char* input_name)
 {
 	FILE* input_file;
@@ -399,16 +385,17 @@ void ReadInputFile(const char* input_name)
 }
 
 /// <summary>
-/// 
+/// Method to compare two given 'Bacteria' objects. This method calculates the correlation between
+/// the two 'Bacteria' objects.
 /// </summary>
 /// <param name="b1">
-/// 
+/// A 'Bacteria' object.
 /// </param>
 /// <param name="b2">
-/// 
+/// A 'Bacteria' object.
 /// </param>
 /// <returns>
-/// 
+/// A correlation score.
 /// </returns>
 double CompareBacteria(Bacteria* b1, Bacteria* b2)
 {
@@ -458,15 +445,14 @@ double CompareBacteria(Bacteria* b1, Bacteria* b2)
 	return correlation / (sqrt(vector_len1) * sqrt(vector_len2));
 }
 
-/// ------------------------------------------------------------------------------------------------------------- ///
-///												Modified Methods												  ///
-/// ------------------------------------------------------------------------------------------------------------- ///
-
 /// <summary>
-///	
+///	Method to compare all 'Bacteria' objects as contained within the ./data/ directory. This method calls
+/// CompareBacteria() and determines the correlation between any two given 'Bacteria' objects. Additionally,
+/// using OpenMP the methods loads the 'Bacteria' objects and compares them using parallel processing.
 /// </summary>
 /// <returns>
-///
+/// A two dimensional (2D) vector of doubles containing the correlation values between the given 'Bacteria'
+/// objects.
 /// </returns>
 vector<vector<double>> CompareAllBacteria() {
 	// Initialise and allocate a vector
@@ -477,7 +463,7 @@ vector<vector<double>> CompareAllBacteria() {
 		corrVector[i] = vector<double>(number_bacteria, 0.0);
 	}
 
-	// Initialise two vectors of integers
+	// Initialise two vectors of integers to store indices
 	vector<int> I;
 	vector<int> J;
 
@@ -489,7 +475,7 @@ vector<vector<double>> CompareAllBacteria() {
 		}
 	}
 
-	// Instantiate array of 'Bacteria' objects
+	// Instantiate array of pointers to 'Bacteria' objects
 	Bacteria** b = new Bacteria * [number_bacteria];
 
 #pragma omp parallel
@@ -515,33 +501,37 @@ vector<vector<double>> CompareAllBacteria() {
 }
 
 /// <summary>
-///
+/// Method to compare all 'Bacteria' objects as contained within the ./data/ directory. This method calls
+/// CompareBacteria() and determines the correlation between any two given 'Bacteria' objects. Notably,
+/// this method performs this comparison sequentially.
 /// </summary>
 /// <returns>
-///
+/// A two dimensional (2D) vector of doubles containing the correlation values between the given 'Bacteria'
+/// objects.
 /// </returns>
 vector<vector<double>> CompareAllBacteriaSequential()
 {
 	// Initialise a 2D vector to size of number of bacteria
 	vector<vector<double>> corrVector(number_bacteria);
 
+	// Instantiate array of pointers to 'Bacteria' objects
 	Bacteria** b = new Bacteria * [number_bacteria];
 
 	// Iterate through all bacteria and load them
 	for (int i = 0; i < number_bacteria; i++)
 	{
-		//printf("load %d of %d\n", i + 1, number_bacteria); // Removed to improve execution time
 		b[i] = new Bacteria(bacteria_name[i]);
 	}
 
-	//#pragma omp parallel for schedule(dynamic)
+	// Iterate through all 'Bacteria' objects
 	for (int i = 0; i < number_bacteria - 1; i++) {
 		// Initialise the row of columns to store correlation values
 		corrVector[i] = vector<double>(number_bacteria, 0.0);
 
+		// Calculate the correlation value and store it in the vector
 		for (int j = i + 1; j < number_bacteria; j++) {
 			double correlation = CompareBacteria(b[i], b[j]); // Calculate the correlation
-			corrVector[i][j] = correlation; // Store in array
+			corrVector[i][j] = correlation; // Store in the vector
 		}
 	}
 
@@ -550,17 +540,14 @@ vector<vector<double>> CompareAllBacteriaSequential()
 }
 
 /// <summary>
-///	
+///	Method to run timed tests on the parallel CompareAllBacteria() method.
 /// </summary>
 /// <param name="numTests">
-/// 
+/// The number of tests to run.
 /// </param>
 /// <param name="numThreads">
-/// 
+/// The number of threads to use.
 /// </param>
-/// <returns>
-///
-/// </returns>
 void RunTests(int numTests, int numThreads) {
 	SetThreads(numThreads); // Set the number of threads
 	double* durations = new double[numTests]; // Create an array to store the test times
@@ -575,30 +562,34 @@ void RunTests(int numTests, int numThreads) {
 		auto end = chrono::high_resolution_clock::now(); // Fetch the end time
 		chrono::duration<double> elapsed = end - start; // Calculate the total time elapsed
 
-		vector<double> parResult = RemoveEmptyValues(MakeVectorOneDimension(resultVec));
+		vector<double> parResult = MakeVectorOneDimension(resultVec);
 		vector<double> seqResult = ReadVectorFromFile("./correlation.txt"); // Read sequential results from file
 
 		// Verify the results are the same
 		CompareResults(seqResult, parResult);
 
-		durations[i] = elapsed.count();
+		// Clear the vectors
+		resultVec.clear();
+		parResult.clear();
+		seqResult.clear();
+
+		durations[i] = elapsed.count(); // Store the test's duration
 	}
 
-	//
+	// Print the test results to the terminal
 	for (int i = 0; i < numTests; i++) {
 		printf("%.10f\n", durations[i]);
 	}
+
+	delete[] durations; // Clear the array of durations
 }
 
 /// <summary>
-///	
+///	Method to run timed tests on the sequential CompareAllBacteriaSequential() method.
 /// </summary>
 /// <param name="numTests">
-/// 
+/// The number of tests to run.
 /// </param>
-/// <returns>
-///
-/// </returns>
 void RunSequentialTest(int numTests) {
 	double* durations = new double[numTests];
 
@@ -612,38 +603,39 @@ void RunSequentialTest(int numTests) {
 
 		auto end = chrono::high_resolution_clock::now(); // Fetch the end time
 		chrono::duration<double> elapsed = end - start; // Calculate the total time elapsed
-		//printf("time elapsed: %.10f seconds\n", elapsed);
+		resultVec.clear(); // Clear the vector
 
-		vector<double> seqResult = ReadVectorFromFile("./correlation.txt"); // Read sequential results from file
-		vector<double> parResult = MakeVectorOneDimension(resultVec); // Convert the vector to one dimension
-
-		// Verify the results are the same
-		CompareResults(seqResult, parResult);
-
-		durations[i] = elapsed.count();
+		durations[i] = elapsed.count(); // Store the tests duration
 	}
 
+	// Print the test results to the terminal
 	for (int i = 0; i < numTests; i++) {
 		printf("%.10f\n", durations[i]);
 	}
+
+	delete[] durations; // Clear the array of durations
 }
 
 /// <summary>
-/// 
+/// Main method for the running of the program.
 /// </summary>
 /// <param name="argc">
-/// 
+/// The number of arguments passed.
 /// </param>
 /// <param name="argv">
-/// 
+/// Array of pointers to arrays of character objects
 /// </param>
 /// <returns>
-/// 
+/// Implicit return.
 /// </returns>
 int main(int argc, char* argv[])
 {
 	RunTests(1, 8);
 	//RunSequentialTest(10);
-	
+
 	return 0; // Exit program
 }
+
+/// ------------------------------------------------------------------------------------------------------------- ///
+///												END OF FILE														  ///
+/// ------------------------------------------------------------------------------------------------------------- ///
