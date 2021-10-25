@@ -10,7 +10,6 @@
 #include <memory.h>
 #include <chrono>
 #include <omp.h>
-
 using namespace std;
 
 /// ------------------------------------------------------------------------------------------------------------- ///
@@ -27,13 +26,12 @@ using namespace std;
 /// and finds the correlation between any given bacteria. This application was found on the Blackboard Assignment ///
 /// tab for CAB401 as one of the provided projects that is available for parallelization.						  ///
 ///																												  ///
-/// Version: 7																								  ///
+/// Version: 10.1																								  ///
 /// ------------------------------------------------------------------------------------------------------------- ///
 int number_bacteria;
 char** bacteria_name;
 long M, M1, M2;
 short code[27] = { 0, 2, 1, 2, 3, 4, 5, 6, 7, -1, 8, 9, 10, 11, -1, 12, 13, 14, 15, 16, 1, 17, 18, 5, 19, 3 };
-int numberThreads;
 #define encode(ch)		code[ch-'A']
 #define LEN				6
 #define AA_NUMBER		20
@@ -70,13 +68,35 @@ vector<double> MakeVectorOneDimension(vector<vector<double>> corrVector) {
 /// <summary>
 /// 
 /// </summary>
+/// <param name="corrVector">
+/// 
+/// </param>
+/// <returns>
+/// 
+/// </returns>
+vector<double> RemoveEmptyValues(vector<double> corrVector) {
+	vector<double> output; // Initialise an empty vector
+
+	for (int i = 0; i < corrVector.size(); i++) {
+		if (corrVector[i] != 0) {
+			printf("%.20f\n", corrVector[i]);
+			output.push_back(corrVector[i]);
+		}
+	}
+
+	return output;
+}
+
+/// <summary>
+/// 
+/// </summary>
 /// <param name="corrArr">
 /// 
 /// </param>
 /// <param name="fileName">
 /// 
 /// </param>
-void WriteToFile(vector<vector<double>> corrVector, string fileName) { // Try replacing with Wayne code from Week 1
+void WriteToFile(vector<vector<double>> corrVector, string fileName) {
 	std::ofstream outputFile(fileName); // Set output file
 
 	vector<double> outputVector = MakeVectorOneDimension(corrVector);
@@ -152,10 +172,14 @@ void CompareResults(vector<double> seqResult, vector<double> parResult) {
 	}
 }
 
+/// <summary>
+/// 
+/// </summary>
+/// <param name="numThreads">
+/// 
+/// </param>
 void SetThreads(int numThreads) {
-	// Set the number of threads
-	omp_set_num_threads(numThreads);
-	numberThreads = numThreads;
+	omp_set_num_threads(numThreads); // Set the number of threads
 	printf("Running with %d threads.\n", numThreads);
 }
 
@@ -189,6 +213,9 @@ private:
 	long total_l;
 	long complement;
 
+	/// <summary>
+	/// 
+	/// </summary>
 	void InitVectors()
 	{
 		vector = new long[M];
@@ -201,6 +228,12 @@ private:
 		complement = 0;
 	}
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="buffer">
+	/// 
+	/// </param>
 	void init_buffer(char* buffer)
 	{
 		complement++;
@@ -215,6 +248,12 @@ private:
 		second[indexs]++;
 	}
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="ch">
+	/// 
+	/// </param>
 	void cont_buffer(char ch)
 	{
 		short enc = encode(ch);
@@ -229,9 +268,13 @@ private:
 
 public:
 	long count;
-	std::vector<double> tv;
-	std::vector<long> ti;
+	std::vector<double> tv; //
+	std::vector<long> ti; //
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="filename"></param>
 	Bacteria(char* filename)
 	{
 		FILE* bacteria_file;
@@ -277,6 +320,10 @@ public:
 
 		count = 0;
 
+		// Reserve memory for the vectors
+		tv.reserve(M);
+		ti.reserve(M);
+
 		for (long i = 0; i < M; i++)
 		{
 			double p1 = second_div_total[i_div_aa_number];
@@ -309,16 +356,19 @@ public:
 			}
 		}
 
-		tv.resize(count);
-		ti.resize(count);
-		delete second_div_total;
+		tv.shrink_to_fit();
+		ti.shrink_to_fit();
+
+		// 'Delete' the vectors & other data structures
+		delete[] second_div_total; // Changed to delete[] to remove Warning C6283
 		delete vector;
 		delete second;
+		tv.clear();
+		ti.clear();
 
 		fclose(bacteria_file);
 	}
 };
-
 
 /// <summary>
 /// 
@@ -351,9 +401,15 @@ void ReadInputFile(const char* input_name)
 /// <summary>
 /// 
 /// </summary>
-/// <param name="b1"></param>
-/// <param name="b2"></param>
-/// <returns></returns>
+/// <param name="b1">
+/// 
+/// </param>
+/// <param name="b2">
+/// 
+/// </param>
+/// <returns>
+/// 
+/// </returns>
 double CompareBacteria(Bacteria* b1, Bacteria* b2)
 {
 	double correlation = 0;
@@ -407,58 +463,16 @@ double CompareBacteria(Bacteria* b1, Bacteria* b2)
 /// ------------------------------------------------------------------------------------------------------------- ///
 
 /// <summary>
-/// 
-/// </summary>
-/// <returns>
-/// 
-/// </returns>
-vector<vector<double>> CompareAllBacteria()
-{
-	// Initialise a 2D vector to size of number of bacteria
-	vector<vector<double>> corrVector(number_bacteria);
-
-	Bacteria** b = new Bacteria * [number_bacteria];
-
-//#pragma omp parallel for schedule(dynamic)
-#pragma omp parallel 
-	{	
-#pragma omp for schedule(dynamic)
-// Iterate through all bacteria and load them
-		for (int i = 0; i < number_bacteria; i++)
-		{
-			//printf("load %d of %d\n", i + 1, number_bacteria); // Removed to improve execution time
-			b[i] = new Bacteria(bacteria_name[i]);
-		}
-
-#pragma omp for schedule(dynamic)
-		//#pragma omp parallel for schedule(dynamic)
-		for (int i = 0; i < number_bacteria - 1; i++) {
-			// Initialise the row of columns to store correlation values
-			corrVector[i] = vector<double>(number_bacteria, 0.0);
-
-			for (int j = i + 1; j < number_bacteria; j++) {
-				double correlation = CompareBacteria(b[i], b[j]); // Calculate the correlation
-				corrVector[i][j] = correlation; // Store in array
-			}
-		}
-	}
-
-	// Return the resulting 2D vector containing the results
-	return corrVector;
-}
-
-/// <summary>
-///	TODO:
-///		[ ] Test this linear loop method to verify it works the same
+///	
 /// </summary>
 /// <returns>
 ///
 /// </returns>
-vector<vector<double>> CompareAllBacteriaLinear() {
-	// Allocate a square matrix
-	//double** corrArr = new double*[number_bacteria];
+vector<vector<double>> CompareAllBacteria() {
+	// Initialise and allocate a vector
 	vector<vector<double>> corrVector(number_bacteria);
 
+	// Iterate through the number of bacteria and initialise a 'row' to store values
 	for (int i = 0; i < number_bacteria; i++) {
 		corrVector[i] = vector<double>(number_bacteria, 0.0);
 	}
@@ -467,33 +481,45 @@ vector<vector<double>> CompareAllBacteriaLinear() {
 	vector<int> I;
 	vector<int> J;
 
-	// Populate vectors
+	// Populate the vectors
 	for (int i = 0; i < number_bacteria; i++) {
 		for (int j = i + 1; j < number_bacteria; j++) {
-			I.push_back(i);
-			J.push_back(j);
+			I.push_back(i); // Append the index 'i' to the vector
+			J.push_back(j); // Append the index 'j' to the vector
 		}
 	}
 
+	// Instantiate array of 'Bacteria' objects
 	Bacteria** b = new Bacteria * [number_bacteria];
 
-	// Iterate through all bacteria and load them
-	for (int i = 0; i < number_bacteria; i++)
+#pragma omp parallel
 	{
-		//printf("load %d of %d\n", i + 1, number_bacteria); // Removed to improve execution time
-		b[i] = new Bacteria(bacteria_name[i]);
+#pragma omp for schedule(dynamic)
+		// Iterate through all bacteria and load them
+		for (int i = 0; i < number_bacteria; i++)
+		{
+			b[i] = new Bacteria(bacteria_name[i]);
+		}
+
+#pragma omp for schedule(dynamic)
+		// Using a one-dimensional iteration space
+		for (int k = 0; k < I.size(); k++) {
+			int i = I[k]; // Fetch the 'i' index
+			int j = J[k]; // Fetch the 'j' index
+			corrVector[i][j] = CompareBacteria(b[i], b[j]); // Calculate and store correlation value
+		}
+
 	}
 
-	// Using a one-dimensional iteration space
-	for (int k = 0; k < I.size(); k++) {
-		int i = I[k];
-		int j = J[k];
-		corrVector[i][j] = CompareBacteria(b[i], b[j]);
-	}
-
-	return corrVector;
+	return corrVector; // Return the resulting 2D vector
 }
 
+/// <summary>
+///
+/// </summary>
+/// <returns>
+///
+/// </returns>
 vector<vector<double>> CompareAllBacteriaSequential()
 {
 	// Initialise a 2D vector to size of number of bacteria
@@ -524,27 +550,33 @@ vector<vector<double>> CompareAllBacteriaSequential()
 }
 
 /// <summary>
-/// 
+///	
 /// </summary>
-/// <returns></returns>
+/// <param name="numTests">
+/// 
+/// </param>
+/// <param name="numThreads">
+/// 
+/// </param>
+/// <returns>
+///
+/// </returns>
 void RunTests(int numTests, int numThreads) {
 	SetThreads(numThreads); // Set the number of threads
-	double* durations = new double[numTests];
+	double* durations = new double[numTests]; // Create an array to store the test times
 
 	for (int i = 0; i < numTests; i++) {
 		printf("Starting test %d of %d.\n", i + 1, numTests);
-		auto start = chrono::high_resolution_clock::now(); // Fetch the start time
 
+		auto start = chrono::high_resolution_clock::now(); // Fetch the start time
 		Init();
 		ReadInputFile("list.txt");
 		vector<vector<double>> resultVec = CompareAllBacteria();
-
 		auto end = chrono::high_resolution_clock::now(); // Fetch the end time
 		chrono::duration<double> elapsed = end - start; // Calculate the total time elapsed
-		//printf("time elapsed: %.10f seconds\n", elapsed);
 
+		vector<double> parResult = RemoveEmptyValues(MakeVectorOneDimension(resultVec));
 		vector<double> seqResult = ReadVectorFromFile("./correlation.txt"); // Read sequential results from file
-		vector<double> parResult = MakeVectorOneDimension(resultVec); // Convert the vector to one dimension
 
 		// Verify the results are the same
 		CompareResults(seqResult, parResult);
@@ -552,11 +584,21 @@ void RunTests(int numTests, int numThreads) {
 		durations[i] = elapsed.count();
 	}
 
+	//
 	for (int i = 0; i < numTests; i++) {
 		printf("%.10f\n", durations[i]);
 	}
 }
 
+/// <summary>
+///	
+/// </summary>
+/// <param name="numTests">
+/// 
+/// </param>
+/// <returns>
+///
+/// </returns>
 void RunSequentialTest(int numTests) {
 	double* durations = new double[numTests];
 
@@ -589,12 +631,19 @@ void RunSequentialTest(int numTests) {
 /// <summary>
 /// 
 /// </summary>
-/// <param name="argc"></param>
-/// <param name="argv"></param>
-/// <returns></returns>
+/// <param name="argc">
+/// 
+/// </param>
+/// <param name="argv">
+/// 
+/// </param>
+/// <returns>
+/// 
+/// </returns>
 int main(int argc, char* argv[])
 {
-	RunTests(10, 1);
+	RunTests(1, 8);
 	//RunSequentialTest(10);
+	
 	return 0; // Exit program
 }
