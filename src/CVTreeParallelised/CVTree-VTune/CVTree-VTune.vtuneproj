@@ -133,7 +133,7 @@
    </workloads>
   </target_settings>
   <analysis_type_settings>
-   <selected_analysis_type_path>D:\Program Files\Intel\oneAPI\vtune\latest\config\analysis_type\hotspots.cfg</selected_analysis_type_path>
+   <selected_analysis_type_path>D:\Program Files\Intel\oneAPI\vtune\latest\config\analysis_type\threading_analysis.cfg</selected_analysis_type_path>
    <localhost>
     <launch>
      <at_start_point>
