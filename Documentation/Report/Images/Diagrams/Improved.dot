@@ -1,0 +1,20 @@
+digraph Improved {
+    size = "10, 10";
+    edge [color = red];
+    Start -> main;
+    edge [color = black];
+    main -> Init [weight = 8];
+    main -> ReadInputFile;
+    main -> CompareAllBacteria;
+    CompareAllBacteria -> Bacteria [shape = diamond];
+    CompareAllBacteria -> CompareBacteria;
+    CompareAllBacteria -> printf [style = dotted, label = "number_bacteria, i, and (i * j) times"];
+    edge [color = red];
+    CompareAllBacteria -> End;
+    Bacteria -> End;
+    CompareBacteria -> End;
+    printf -> End;
+    main [shape = box]; // Main method
+    Start [shape = Mdiamond];
+    End [shape = Msquare];
+}

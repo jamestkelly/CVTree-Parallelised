@@ -1,0 +1,16 @@
+@startuml
+User -> main: Start program
+main -> Init: Initialise parameters
+Init -> main: Parameters initialised
+main -> ReadInputFile: Read "list.txt"
+ReadInputFile -> main: File successfully read
+main -> CompareAllBacteria: Start comparison
+CompareAllBacteria -> Bacteria: Load Bacteria objects
+Bacteria -> CompareAllBacteria: Bacteria objects loaded
+CompareAllBacteria -> CompareBacteria: Calculate correlation values
+CompareBacteria -> CompareAllBacteria: Correlation values printed
+CompareAllBacteria -> main: Comparison complete
+main -> User: Exit program
+@enduml
+
+//www.plantuml.com/plantuml/png/XLB1IWGn3BttAyBUzGFc8Ak3me87KVo0s8aIoRH3cihwzquBso8pi9T2tijxIHyv9aErF8jxJwHmSmSpSXZWhS2mQFnId5t12dSAR4Dz6OKJmO8hJKQQN46x_gKHmArzQaQlXDCfBDcUM6Ye9HpM5hkrintSFxgRrYfbxocbpopo2qhOJSSuBwXqB_A0taWPB__mbU4KWzis5MaNF4USMWdnuvky9TU0_J4R0SXgGzFkjERGvIEApu96uACg2Hh703yecTB5uzeAuqO9YtAm_IrQfcEBfgOaPDG2BISnmEEP-oKSAKnvbZy0
