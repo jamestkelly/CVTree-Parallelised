@@ -1,0 +1,33 @@
+digraph Improved_SequenceDiagram {
+    graph [overlap = true, splines = line, nodesep = 1.0, ordering = out];
+    edge [arrowhead = none];
+    node [shape = none, width = 0; height = 0; label = ""];
+
+    {
+        rank = same;
+        node [shape = rectangle, height = 0.7, width = 2];
+        user[label = "User"];
+        user2[label = "User"];
+        main[label = "main"];
+        init[label = "Init"];
+        read[label = "ReadInputFile"];
+        compareAll[label = "CompareAllBacteria"];
+        bacteria[label = "Bacteria"];
+        compare[label = "CompareBacteria"];
+    }
+
+    // Draw vertical lines
+    {
+        edge [style = dashed, weight = 6];
+        user -> a1 -> a2 -> a3;
+        a3 -> a4 [penwidth=5, style=solid];
+        a4 -> a5;
+        a5 -> user2;
+    }
+
+    {
+        edge [style=dashed, weight=6];
+        main -> b1 -> b2 -> b3 -> b4;
+        b4 -> b5 [penwidth=5; style=solid];
+    }
+}
