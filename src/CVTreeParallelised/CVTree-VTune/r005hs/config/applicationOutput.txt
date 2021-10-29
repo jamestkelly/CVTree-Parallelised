@@ -1,3 +1,0 @@
-There was a problem opening the input file.
-Starting test 1 of 1.
-Running with 8 threads.

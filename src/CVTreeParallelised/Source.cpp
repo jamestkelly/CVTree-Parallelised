@@ -637,6 +637,24 @@ void RunProfilerParallelTest(int numThreads) {
 }
 
 /// <summary>
+/// 
+/// </summary>
+/// <param name="numThreads"></param>
+void RunProfilerSequentialTest() {
+	auto start = chrono::high_resolution_clock::now(); // Fetch the start time
+
+	Init();
+	ReadInputFile("list.txt");
+	vector<vector<double>> resultVec = CompareAllBacteriaSequential();
+
+	auto end = chrono::high_resolution_clock::now(); // Fetch the end time
+	chrono::duration<double> elapsed = end - start; // Calculate the total time elapsed
+	resultVec.clear(); // Clear the vector
+
+	printf("%.10f\n", elapsed.count());
+}
+
+/// <summary>
 /// Main method for the running of the program.
 /// </summary>
 /// <param name="argc">
@@ -652,7 +670,8 @@ int main(int argc, char* argv[])
 {
 	//RunTests(2, 8);
 	//RunSequentialTest(10);
-	RunProfilerParallelTest(8);
+	//RunProfilerParallelTest(8);
+	RunProfilerSequentialTest();
 
 	return 0; // Exit program
 }

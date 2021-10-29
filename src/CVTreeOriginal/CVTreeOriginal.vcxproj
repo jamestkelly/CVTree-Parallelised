@@ -139,9 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="improved.cpp" />
     <ClCompile Include="Source.cpp" />
-    <ClCompile Include="tidy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="list.txt" />

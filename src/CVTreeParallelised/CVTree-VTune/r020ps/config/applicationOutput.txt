@@ -1,0 +1,2 @@
+Running with 8 threads.
+4.3817651000
