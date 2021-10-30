@@ -19,14 +19,10 @@
 /// ------------------------------------------------------------------------------------------------------------- ///
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <math.h>
 #include <vector>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
-#include <memory.h>
 #include <chrono>
 #include <omp.h>
 using namespace std;
@@ -617,9 +613,12 @@ void RunSequentialTest(int numTests) {
 }
 
 /// <summary>
-/// 
+/// Method to run a single timed test on the parallel CompareAllBacteria() method. This excutes
+/// the program without any result verification and is to be used for profiling of the program.
 /// </summary>
-/// <param name="numThreads"></param>
+/// <param name="numThreads">
+/// The number of threads to use.
+/// </param>
 void RunProfilerParallelTest(int numThreads) {
 	SetThreads(numThreads); // Set the number of threads
 
@@ -637,9 +636,10 @@ void RunProfilerParallelTest(int numThreads) {
 }
 
 /// <summary>
-/// 
+/// Method to run a single timed test on the sequential CompareAllBacteriaSequential() method. 
+/// This excutes the program without any result verification and is to be used for profiling
+/// of the program.
 /// </summary>
-/// <param name="numThreads"></param>
 void RunProfilerSequentialTest() {
 	auto start = chrono::high_resolution_clock::now(); // Fetch the start time
 
@@ -670,8 +670,8 @@ int main(int argc, char* argv[])
 {
 	//RunTests(2, 8);
 	//RunSequentialTest(10);
-	//RunProfilerParallelTest(8);
-	RunProfilerSequentialTest();
+	RunProfilerParallelTest(8);
+	//RunProfilerSequentialTest();
 
 	return 0; // Exit program
 }

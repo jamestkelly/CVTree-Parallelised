@@ -29,10 +29,10 @@
        <targetName>launch</targetName>
        <result_directory.path>D:\Projects\CVTree-Parallelised\src\CVTreeParallelised\CVTree-VTune\r@@@{at}</result_directory.path>
        <use_app_dir_as_work_dir type="bool">true</use_app_dir_as_work_dir>
-       <launch_app.app_to_launch>D:\Projects\CVTree-Parallelised\src\CVTreeOriginal\x64\Release\CVTreeOriginal.exe</launch_app.app_to_launch>
+       <launch_app.app_to_launch>C:\Users\Owner\Desktop\Profiling\CVTreeParallelised.exe</launch_app.app_to_launch>
        <launch_app.app_parameters></launch_app.app_parameters>
        <launch.userappworkdir></launch.userappworkdir>
-       <launch_app.working_folder>D:\Projects\CVTree-Parallelised\src\CVTreeOriginal\x64\Release</launch_app.working_folder>
+       <launch_app.working_folder>C:\Users\Owner\Desktop\Profiling</launch_app.working_folder>
        <context>
         <contextValue>
          <id>allowMultipleRuns</id>
@@ -133,7 +133,7 @@
    </workloads>
   </target_settings>
   <analysis_type_settings>
-   <selected_analysis_type_path>D:\Program Files\Intel\oneAPI\vtune\latest\config\analysis_type\hotspots.cfg</selected_analysis_type_path>
+   <selected_analysis_type_path>D:\Program Files\Intel\oneAPI\vtune\latest\config\analysis_type\threading_analysis.cfg</selected_analysis_type_path>
    <localhost>
     <launch>
      <at_start_point>
