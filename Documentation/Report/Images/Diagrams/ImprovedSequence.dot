@@ -7,7 +7,7 @@ digraph Improved_SequenceDiagram {
         rank = same;
         node [shape = rectangle, height = 0.7, width = 2];
         user[label = "User"];
-        user2[label = "User"];
+        user[label = "User"];
         main[label = "main"];
         init[label = "Init"];
         read[label = "ReadInputFile"];
@@ -22,7 +22,6 @@ digraph Improved_SequenceDiagram {
         user -> a1 -> a2 -> a3;
         a3 -> a4 [penwidth=5, style=solid];
         a4 -> a5;
-        a5 -> user2;
     }
 
     {
